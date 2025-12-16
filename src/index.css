@@ -2,68 +2,50 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
 
 @layer base {
   :root {
-    /* Cyberpunk Dark Theme */
-    --background: 220 20% 4%;
-    --foreground: 180 100% 90%;
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
 
-    --card: 220 25% 8%;
-    --card-foreground: 180 100% 90%;
+    --card: 0 0% 5%;
+    --card-foreground: 0 0% 100%;
 
-    --popover: 220 25% 6%;
-    --popover-foreground: 180 100% 90%;
+    --popover: 0 0% 5%;
+    --popover-foreground: 0 0% 100%;
 
-    --primary: 180 100% 50%;
-    --primary-foreground: 220 20% 4%;
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 0%;
 
-    --secondary: 280 100% 60%;
+    --secondary: 0 0% 15%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 20% 15%;
-    --muted-foreground: 220 15% 55%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 60%;
 
-    --accent: 320 100% 60%;
+    --accent: 0 0% 20%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 85% 55%;
+    --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 180 50% 20%;
-    --input: 220 25% 12%;
-    --ring: 180 100% 50%;
+    --border: 0 0% 20%;
+    --input: 0 0% 10%;
+    --ring: 0 0% 100%;
 
-    --radius: 0.5rem;
+    --radius: 0.25rem;
 
-    /* Custom tokens */
-    --glow-primary: 180 100% 50%;
-    --glow-secondary: 280 100% 60%;
-    --glow-accent: 320 100% 60%;
-    --glow-success: 120 100% 45%;
-    --glow-warning: 45 100% 55%;
-
-    --gradient-cyber: linear-gradient(135deg, hsl(180 100% 50% / 0.2), hsl(280 100% 60% / 0.2));
-    --gradient-glow: linear-gradient(180deg, hsl(180 100% 50% / 0.1), transparent);
-
-    /* Fonts */
     --font-mono: 'JetBrains Mono', monospace;
-    --font-display: 'Orbitron', sans-serif;
 
-    --sidebar-background: 220 25% 6%;
-    --sidebar-foreground: 180 100% 90%;
-    --sidebar-primary: 180 100% 50%;
-    --sidebar-primary-foreground: 220 20% 4%;
-    --sidebar-accent: 220 25% 12%;
-    --sidebar-accent-foreground: 180 100% 90%;
-    --sidebar-border: 180 50% 20%;
-    --sidebar-ring: 180 100% 50%;
-  }
-
-  .dark {
-    --background: 220 20% 4%;
-    --foreground: 180 100% 90%;
+    --sidebar-background: 0 0% 3%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 20%;
+    --sidebar-ring: 0 0% 100%;
   }
 }
 
@@ -73,122 +55,25 @@
   }
 
   body {
-    @apply bg-background text-foreground font-mono;
+    @apply bg-background text-foreground;
     font-family: var(--font-mono);
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-display);
+    font-family: var(--font-mono);
   }
 }
 
 @layer components {
-  .glow-primary {
-    box-shadow: 0 0 20px hsl(var(--glow-primary) / 0.4),
-                0 0 40px hsl(var(--glow-primary) / 0.2),
-                inset 0 0 20px hsl(var(--glow-primary) / 0.1);
+  .chat-message pre {
+    @apply bg-muted p-3 rounded overflow-x-auto my-2 text-sm;
   }
 
-  .glow-secondary {
-    box-shadow: 0 0 20px hsl(var(--glow-secondary) / 0.4),
-                0 0 40px hsl(var(--glow-secondary) / 0.2);
+  .chat-message code {
+    @apply bg-muted px-1 py-0.5 rounded text-sm;
   }
 
-  .glow-accent {
-    box-shadow: 0 0 20px hsl(var(--glow-accent) / 0.4),
-                0 0 40px hsl(var(--glow-accent) / 0.2);
-  }
-
-  .text-glow {
-    text-shadow: 0 0 10px hsl(var(--glow-primary) / 0.8),
-                 0 0 20px hsl(var(--glow-primary) / 0.4);
-  }
-
-  .text-glow-secondary {
-    text-shadow: 0 0 10px hsl(var(--glow-secondary) / 0.8),
-                 0 0 20px hsl(var(--glow-secondary) / 0.4);
-  }
-
-  .cyber-grid {
-    background-image: 
-      linear-gradient(hsl(180 100% 50% / 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(180 100% 50% / 0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-  }
-
-  .scanline {
-    position: relative;
-    overflow: hidden;
-  }
-
-  .scanline::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.5), transparent);
-    animation: scan 3s linear infinite;
-  }
-
-  @keyframes scan {
-    0% { top: 0; opacity: 1; }
-    50% { opacity: 0.5; }
-    100% { top: 100%; opacity: 1; }
-  }
-
-  @keyframes pulse-glow {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-  }
-
-  @keyframes data-flow {
-    0% { transform: translateY(-100%); opacity: 0; }
-    50% { opacity: 1; }
-    100% { transform: translateY(100%); opacity: 0; }
-  }
-
-  @keyframes rotate-slow {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-
-  @keyframes flicker {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.8; }
-    75% { opacity: 0.9; }
-  }
-
-  .animate-pulse-glow {
-    animation: pulse-glow 2s ease-in-out infinite;
-  }
-
-  .animate-data-flow {
-    animation: data-flow 2s linear infinite;
-  }
-
-  .animate-rotate-slow {
-    animation: rotate-slow 20s linear infinite;
-  }
-
-  .animate-flicker {
-    animation: flicker 0.1s ease-in-out infinite;
-  }
-
-  .border-gradient {
-    border: 1px solid transparent;
-    background: linear-gradient(var(--background), var(--background)) padding-box,
-                linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary))) border-box;
-  }
-}
-
-@layer utilities {
-  .font-display {
-    font-family: var(--font-display);
-  }
-
-  .font-mono {
-    font-family: var(--font-mono);
+  .chat-message pre code {
+    @apply bg-transparent p-0;
   }
 }
