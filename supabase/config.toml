@@ -1,4 +1,7 @@
 project_id = "mwhaxqaktjyjnfpwwxmv"
 
+[functions.debate]
+verify_jwt = false
+
 [functions.math-chat]
 verify_jwt = false
