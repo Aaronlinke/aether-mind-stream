@@ -2,44 +2,37 @@ import { useState } from "react";
 import { MathChat } from "@/components/MathChat";
 import { DebateChat } from "@/components/DebateChat";
 import { CryptoTools } from "@/components/CryptoTools";
+import { SHA256Analyzer } from "@/components/SHA256Analyzer";
+import { LatticeAnalyzer } from "@/components/LatticeAnalyzer";
 
 const Index = () => {
-  const [mode, setMode] = useState<"chat" | "debate" | "tools">("tools");
+  const [mode, setMode] = useState<"chat" | "debate" | "tools" | "sha256" | "lattice">("sha256");
+
+  const modes = [
+    { id: "tools", label: "TOOLS" },
+    { id: "sha256", label: "SHA-256" },
+    { id: "lattice", label: "GITTER" },
+    { id: "chat", label: "CHAT" },
+    { id: "debate", label: "DEBATTE" },
+  ] as const;
 
   return (
     <div className="h-screen flex flex-col">
       {/* Mode Toggle */}
       <div className="border-b border-border flex">
-        <button
-          onClick={() => setMode("chat")}
-          className={`flex-1 py-2 text-xs font-medium transition-colors ${
-            mode === "chat" 
-              ? "bg-foreground text-background" 
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          CHAT
-        </button>
-        <button
-          onClick={() => setMode("debate")}
-          className={`flex-1 py-2 text-xs font-medium transition-colors ${
-            mode === "debate" 
-              ? "bg-foreground text-background" 
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          DEBATTE
-        </button>
-        <button
-          onClick={() => setMode("tools")}
-          className={`flex-1 py-2 text-xs font-medium transition-colors ${
-            mode === "tools" 
-              ? "bg-foreground text-background" 
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          TOOLS
-        </button>
+        {modes.map((m) => (
+          <button
+            key={m.id}
+            onClick={() => setMode(m.id)}
+            className={`flex-1 py-2 text-xs font-medium transition-colors ${
+              mode === m.id 
+                ? "bg-foreground text-background" 
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {m.label}
+          </button>
+        ))}
       </div>
 
       {/* Content */}
@@ -47,6 +40,8 @@ const Index = () => {
         {mode === "chat" && <MathChat />}
         {mode === "debate" && <DebateChat />}
         {mode === "tools" && <CryptoTools />}
+        {mode === "sha256" && <SHA256Analyzer />}
+        {mode === "lattice" && <LatticeAnalyzer />}
       </div>
     </div>
   );
