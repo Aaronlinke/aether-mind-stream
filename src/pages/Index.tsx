@@ -5,15 +5,17 @@ import { CryptoTools } from "@/components/CryptoTools";
 import { SHA256Analyzer } from "@/components/SHA256Analyzer";
 import { LatticeAnalyzer } from "@/components/LatticeAnalyzer";
 import { LinkeSystem } from "@/components/LinkeSystem";
+import { OmniGenesis } from "@/components/OmniGenesis";
 
 const Index = () => {
-  const [mode, setMode] = useState<"chat" | "debate" | "tools" | "sha256" | "lattice" | "linke">("linke");
+  const [mode, setMode] = useState<"omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice">("omni");
 
   const modes = [
+    { id: "omni", label: "OMNI" },
     { id: "linke", label: "LINKE" },
-    { id: "tools", label: "TOOLS" },
     { id: "sha256", label: "SHA-256" },
     { id: "lattice", label: "GITTER" },
+    { id: "tools", label: "TOOLS" },
     { id: "chat", label: "CHAT" },
     { id: "debate", label: "DEBATTE" },
   ] as const;
@@ -39,12 +41,13 @@ const Index = () => {
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
+        {mode === "omni" && <OmniGenesis />}
+        {mode === "linke" && <LinkeSystem />}
         {mode === "chat" && <MathChat />}
         {mode === "debate" && <DebateChat />}
         {mode === "tools" && <CryptoTools />}
         {mode === "sha256" && <SHA256Analyzer />}
         {mode === "lattice" && <LatticeAnalyzer />}
-        {mode === "linke" && <LinkeSystem />}
       </div>
     </div>
   );
