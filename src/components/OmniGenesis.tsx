@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Box, Target, Layers, Zap, Play, RotateCcw, Download, Circle, AlertTriangle, Square, Cpu } from "lucide-react";
+import { Box, Target, Layers, Zap, Play, RotateCcw, Download, Circle, AlertTriangle, Square, Cpu, GitCompare } from "lucide-react";
 
 // SECP256K1 Curve Order
 const N_CURVE = BigInt("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
@@ -845,6 +845,9 @@ export const OmniGenesis = () => {
               <TabsTrigger value="stream" className="rounded-none data-[state=active]:bg-background text-xs gap-1">
                 <Cpu className="w-3 h-3" /> STREAM
               </TabsTrigger>
+              <TabsTrigger value="compare" className="rounded-none data-[state=active]:bg-background text-xs gap-1">
+                <GitCompare className="w-3 h-3" /> VERGLEICH
+              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="ulam" className="flex-1 flex items-center justify-center bg-black p-4">
@@ -883,6 +886,155 @@ export const OmniGenesis = () => {
                   )}
                 </div>
               </ScrollArea>
+            </TabsContent>
+            
+            <TabsContent value="compare" className="flex-1 bg-background overflow-auto p-4">
+              <div className="grid grid-cols-2 gap-4 h-full">
+                {/* Forward SRIL */}
+                <div className="border border-[hsl(180,100%,50%)]/30 rounded-lg p-3 bg-card">
+                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border">
+                    <Play className="w-4 h-4 text-[hsl(180,100%,50%)]" />
+                    <span className="text-xs font-bold text-[hsl(180,100%,50%)]">VORWÄRTS (T=0 → T=n)</span>
+                  </div>
+                  {srilStates.length > 0 ? (
+                    <div className="space-y-1 font-mono text-xs">
+                      {srilStates.map((s, i) => (
+                        <div key={i} className={`flex justify-between py-1 px-2 rounded ${i === 0 ? "bg-[hsl(180,100%,50%)]/10 border border-[hsl(180,100%,50%)]/30" : ""}`}>
+                          <span className="text-muted-foreground">T={s.t}</span>
+                          <span className="text-[hsl(180,100%,70%)]">H={s.H.toFixed(3)}</span>
+                          <span className="text-green-400">N={s.N.toFixed(3)}</span>
+                          <span className="text-yellow-400">G={s.G.toFixed(3)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-muted-foreground text-xs text-center py-8">
+                      Führe SRIL Vorwärts-Simulation aus...
+                    </div>
+                  )}
+                </div>
+                
+                {/* Backward SRIL */}
+                <div className="border border-[hsl(280,100%,50%)]/30 rounded-lg p-3 bg-card">
+                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border">
+                    <RotateCcw className="w-4 h-4 text-[hsl(280,100%,50%)]" />
+                    <span className="text-xs font-bold text-[hsl(280,100%,50%)]">RÜCKWÄRTS (T=n → T=0)</span>
+                  </div>
+                  {srilInverseStates.length > 0 ? (
+                    <div className="space-y-1 font-mono text-xs">
+                      {srilInverseStates.map((s, i) => (
+                        <div key={i} className={`flex justify-between py-1 px-2 rounded ${s.t === 0 ? "bg-[hsl(280,100%,50%)]/10 border border-[hsl(280,100%,50%)]/30" : ""}`}>
+                          <span className="text-muted-foreground">T={s.t}</span>
+                          <span className="text-[hsl(280,100%,70%)]">H={s.H.toFixed(3)}</span>
+                          <span className="text-green-400">N={s.N.toFixed(3)}</span>
+                          <span className="text-yellow-400">G={s.G.toFixed(3)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-muted-foreground text-xs text-center py-8">
+                      Führe SRIL Rückwärts-Berechnung aus...
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Difference Analysis */}
+              {srilStates.length > 0 && srilInverseStates.length > 0 && srilInverseStates[0]?.t === 0 && (
+                <div className="mt-4 border border-border rounded-lg p-4 bg-card">
+                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border">
+                    <GitCompare className="w-4 h-4 text-primary" />
+                    <span className="text-xs font-bold">DIFFERENZANALYSE (Ursprung: Erwartet vs. Berechnet)</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-4 gap-4 font-mono text-xs">
+                    <div className="text-center">
+                      <div className="text-muted-foreground mb-1">PARAMETER</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-[hsl(180,100%,50%)] mb-1">ERWARTET (Vorwärts T=0)</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-[hsl(280,100%,50%)] mb-1">BERECHNET (Rückwärts)</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-destructive mb-1">ΔABWEICHUNG</div>
+                    </div>
+                    
+                    {/* H Row */}
+                    <div className="text-center font-bold">H(0)</div>
+                    <div className="text-center text-[hsl(180,100%,70%)]">{srilStates[0].H.toFixed(4)}</div>
+                    <div className="text-center text-[hsl(280,100%,70%)]">{srilInverseStates[0].H.toFixed(4)}</div>
+                    <div className={`text-center ${Math.abs(srilStates[0].H - srilInverseStates[0].H) < 0.01 ? "text-green-400" : "text-destructive"}`}>
+                      {(srilInverseStates[0].H - srilStates[0].H).toFixed(4)}
+                      <span className="ml-1 text-muted-foreground">({((Math.abs(srilInverseStates[0].H - srilStates[0].H) / Math.abs(srilStates[0].H)) * 100).toFixed(2)}%)</span>
+                    </div>
+                    
+                    {/* N Row */}
+                    <div className="text-center font-bold">N(0)</div>
+                    <div className="text-center text-[hsl(180,100%,70%)]">{srilStates[0].N.toFixed(4)}</div>
+                    <div className="text-center text-[hsl(280,100%,70%)]">{srilInverseStates[0].N.toFixed(4)}</div>
+                    <div className={`text-center ${Math.abs(srilStates[0].N - srilInverseStates[0].N) < 0.01 ? "text-green-400" : "text-destructive"}`}>
+                      {(srilInverseStates[0].N - srilStates[0].N).toFixed(4)}
+                      <span className="ml-1 text-muted-foreground">({((Math.abs(srilInverseStates[0].N - srilStates[0].N) / Math.abs(srilStates[0].N)) * 100).toFixed(2)}%)</span>
+                    </div>
+                    
+                    {/* G Row */}
+                    <div className="text-center font-bold">G(0)</div>
+                    <div className="text-center text-[hsl(180,100%,70%)]">{srilStates[0].G.toFixed(4)}</div>
+                    <div className="text-center text-[hsl(280,100%,70%)]">{srilInverseStates[0].G.toFixed(4)}</div>
+                    <div className={`text-center ${Math.abs(srilStates[0].G - srilInverseStates[0].G) < 0.01 ? "text-green-400" : "text-destructive"}`}>
+                      {(srilInverseStates[0].G - srilStates[0].G).toFixed(4)}
+                      <span className="ml-1 text-muted-foreground">({((Math.abs(srilInverseStates[0].G - srilStates[0].G) / Math.abs(srilStates[0].G)) * 100).toFixed(2)}%)</span>
+                    </div>
+                  </div>
+                  
+                  {/* Total Error */}
+                  <div className="mt-4 pt-3 border-t border-border">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-muted-foreground">GESAMT-REKONSTRUKTIONSFEHLER (Euklidische Distanz):</span>
+                      <span className={`font-mono font-bold ${
+                        Math.sqrt(
+                          Math.pow(srilStates[0].H - srilInverseStates[0].H, 2) +
+                          Math.pow(srilStates[0].N - srilInverseStates[0].N, 2) +
+                          Math.pow(srilStates[0].G - srilInverseStates[0].G, 2)
+                        ) < 0.1 ? "text-green-400" : "text-yellow-400"
+                      }`}>
+                        {Math.sqrt(
+                          Math.pow(srilStates[0].H - srilInverseStates[0].H, 2) +
+                          Math.pow(srilStates[0].N - srilInverseStates[0].N, 2) +
+                          Math.pow(srilStates[0].G - srilInverseStates[0].G, 2)
+                        ).toFixed(6)}
+                      </span>
+                    </div>
+                    <div className="mt-2 h-2 bg-background rounded overflow-hidden">
+                      <div 
+                        className={`h-full ${
+                          Math.sqrt(
+                            Math.pow(srilStates[0].H - srilInverseStates[0].H, 2) +
+                            Math.pow(srilStates[0].N - srilInverseStates[0].N, 2) +
+                            Math.pow(srilStates[0].G - srilInverseStates[0].G, 2)
+                          ) < 0.1 ? "bg-green-500" : "bg-yellow-500"
+                        }`}
+                        style={{ 
+                          width: `${Math.max(5, 100 - Math.sqrt(
+                            Math.pow(srilStates[0].H - srilInverseStates[0].H, 2) +
+                            Math.pow(srilStates[0].N - srilInverseStates[0].N, 2) +
+                            Math.pow(srilStates[0].G - srilInverseStates[0].G, 2)
+                          ) * 100)}%` 
+                        }}
+                      />
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1 text-right">
+                      Genauigkeit: {Math.max(0, (100 - Math.sqrt(
+                        Math.pow(srilStates[0].H - srilInverseStates[0].H, 2) +
+                        Math.pow(srilStates[0].N - srilInverseStates[0].N, 2) +
+                        Math.pow(srilStates[0].G - srilInverseStates[0].G, 2)
+                      ) * 100)).toFixed(2)}%
+                    </div>
+                  </div>
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </div>
