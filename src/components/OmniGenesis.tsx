@@ -99,6 +99,54 @@ function computeSRIL(state: SRILState): SRILState {
   };
 }
 
+// SRIL Rückwärts-Berechnung (Inverse)
+// Gegeben: H(t+1), N(t+1), G(t+1) → Berechne H(t), N(t), G(t)
+// Verwendet Newton-Raphson Iteration zur Lösung des gekoppelten Systems
+function computeSRILInverse(nextState: SRILState, maxIterations = 100, tolerance = 1e-10): SRILState {
+  // Initialer Schätzwert: lineare Rückextrapolation
+  let H_t = nextState.H;
+  let N_t = nextState.N / GAMMA;
+  let G_t = nextState.G * 0.95;
+  
+  for (let iter = 0; iter < maxIterations; iter++) {
+    // Vorwärts-Berechnung mit aktueller Schätzung
+    const H_next_calc = H_t + (ALPHA * N_t) - (BETA * G_t);
+    const N_next_calc = (GAMMA * N_t) + (DELTA * Math.abs(H_t));
+    const G_next_calc = G_t + (ETA * (H_next_calc + N_next_calc));
+    
+    // Residuen (Fehler)
+    const errH = nextState.H - H_next_calc;
+    const errN = nextState.N - N_next_calc;
+    const errG = nextState.G - G_next_calc;
+    
+    const totalError = Math.sqrt(errH*errH + errN*errN + errG*errG);
+    if (totalError < tolerance) break;
+    
+    // Jacobian-basierte Korrektur (vereinfacht)
+    // ∂H_next/∂H_t = 1, ∂H_next/∂N_t = α, ∂H_next/∂G_t = -β
+    // ∂N_next/∂H_t = ±δ, ∂N_next/∂N_t = γ, ∂N_next/∂G_t = 0
+    // ∂G_next/∂G_t = 1 + η*(∂H_next/∂G_t + 0) = 1 - η*β
+    
+    const signH = H_t >= 0 ? 1 : -1;
+    
+    // Inverse Jacobian Approximation für Korrektur
+    const detFactor = 1 / (GAMMA * (1 - ETA * BETA) - ALPHA * DELTA * signH * ETA);
+    
+    // Korrektur anwenden (gedämpft für Stabilität)
+    const damping = 0.5;
+    H_t += damping * (errH + ALPHA * errN / GAMMA);
+    N_t += damping * (errN / GAMMA);
+    G_t += damping * (errG / (1 - ETA * BETA));
+  }
+  
+  return {
+    t: nextState.t - 1,
+    H: H_t,
+    N: N_t,
+    G: G_t
+  };
+}
+
 // Primzahl-Check für Ulam
 function isPrime(n: number): boolean {
   if (n < 2) return false;
@@ -114,7 +162,15 @@ export const OmniGenesis = () => {
   const [n0, setN0] = useState("5.824");
   const [g0, setG0] = useState("1.952");
   const [srilStates, setSrilStates] = useState<SRILState[]>([]);
+  const [srilInverseStates, setSrilInverseStates] = useState<SRILState[]>([]);
   const [isRunning, setIsRunning] = useState(false);
+  const [isRunningInverse, setIsRunningInverse] = useState(false);
+  
+  // Target State für Rückwärtsrechnung
+  const [targetH, setTargetH] = useState("1.425");
+  const [targetN, setTargetN] = useState("6.521");
+  const [targetG, setTargetG] = useState("4.447");
+  const [targetT, setTargetT] = useState("5");
   
   // Matrix State
   const [matrixH, setMatrixH] = useState("-3.340");
@@ -189,6 +245,43 @@ export const OmniGenesis = () => {
     addLog("SRIL erreicht Balanced Temporal Equilibrium (BTE)", "success");
     setIsRunning(false);
   }, [h0, n0, g0, addLog]);
+
+  // SRIL Rückwärts-Simulation
+  const runSRILInverse = useCallback(async () => {
+    const t = parseInt(targetT);
+    const targetState: SRILState = {
+      t: t,
+      H: parseFloat(targetH),
+      N: parseFloat(targetN),
+      G: parseFloat(targetG)
+    };
+    
+    if (isNaN(targetState.H) || isNaN(targetState.N) || isNaN(targetState.G) || isNaN(t) || t < 1) {
+      addLog("FEHLER: Ungültige Zielwerte", "error");
+      return;
+    }
+    
+    setIsRunningInverse(true);
+    setSrilInverseStates([targetState]);
+    addLog("SRIL-INVERSE gestartet (Rückwärtsrechnung)", "warning");
+    addLog(`ZIEL T=${t}: H=${targetState.H.toFixed(3)}, N=${targetState.N.toFixed(3)}, G=${targetState.G.toFixed(3)}`, "info");
+    
+    let currentState = targetState;
+    const states: SRILState[] = [targetState];
+    
+    for (let i = t; i > 0; i--) {
+      await new Promise(r => setTimeout(r, 400));
+      currentState = computeSRILInverse(currentState);
+      states.unshift(currentState);
+      setSrilInverseStates([...states]);
+      addLog(`T=${currentState.t}: H=${currentState.H.toFixed(3)}, N=${currentState.N.toFixed(3)}, G=${currentState.G.toFixed(3)}`, 
+        currentState.t === 0 ? "success" : "info");
+    }
+    
+    addLog(`URSPRUNG REKONSTRUIERT: H(0)=${currentState.H.toFixed(3)}, N(0)=${currentState.N.toFixed(3)}, G(0)=${currentState.G.toFixed(3)}`, "success");
+    addLog("Vergleiche mit bekannten Ur-Variablen: H(0)=-4.256, N(0)=5.824, G(0)=1.952", "warning");
+    setIsRunningInverse(false);
+  }, [targetH, targetN, targetG, targetT, addLog]);
 
   // Matrix LLL-Reduktion
   const runMatrixReduction = useCallback(() => {
@@ -530,8 +623,9 @@ export const OmniGenesis = () => {
           <Tabs defaultValue="sril" className="flex-1 flex flex-col">
             <TabsList className="w-full justify-start rounded-none border-b border-border bg-transparent p-0">
               <TabsTrigger value="sril" className="rounded-none data-[state=active]:bg-background text-xs">SRIL</TabsTrigger>
+              <TabsTrigger value="inverse" className="rounded-none data-[state=active]:bg-background text-xs">INVERSE</TabsTrigger>
               <TabsTrigger value="matrix" className="rounded-none data-[state=active]:bg-background text-xs">MATRIX</TabsTrigger>
-              <TabsTrigger value="executor" className="rounded-none data-[state=active]:bg-background text-xs text-destructive">EXECUTOR</TabsTrigger>
+              <TabsTrigger value="executor" className="rounded-none data-[state=active]:bg-background text-xs text-destructive">EXEC</TabsTrigger>
             </TabsList>
             
             <TabsContent value="sril" className="flex-1 p-4 space-y-4 overflow-auto">
@@ -566,6 +660,60 @@ export const OmniGenesis = () => {
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="inverse" className="flex-1 p-4 space-y-4 overflow-auto">
+              <div className="bg-[hsl(280,100%,30%)]/20 border border-[hsl(280,100%,50%)] rounded p-2 text-xs">
+                <span className="text-[hsl(280,100%,70%)]">RÜCKWÄRTS-REKONSTRUKTION</span>
+                <p className="text-muted-foreground mt-1">Vom Zielzustand zurück zu T=0</p>
+              </div>
+              
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground">ZIEL T (Zeitpunkt)</Label>
+                  <Input value={targetT} onChange={e => setTargetT(e.target.value)} className="font-mono text-xs bg-background" />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">H(T) - ZIEL-ENTHALPIE</Label>
+                  <Input value={targetH} onChange={e => setTargetH(e.target.value)} className="font-mono text-xs bg-background" />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">N(T) - ZIEL-NAVIGATION</Label>
+                  <Input value={targetN} onChange={e => setTargetN(e.target.value)} className="font-mono text-xs bg-background" />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">G(T) - ZIEL-WACHSTUM</Label>
+                  <Input value={targetG} onChange={e => setTargetG(e.target.value)} className="font-mono text-xs bg-background" />
+                </div>
+              </div>
+              
+              <Button onClick={runSRILInverse} disabled={isRunningInverse} className="w-full bg-[hsl(280,100%,50%)] text-white hover:bg-[hsl(280,100%,40%)]">
+                <RotateCcw className="w-4 h-4 mr-2" />
+                RÜCKWÄRTS RECHNEN
+              </Button>
+              
+              {/* Inverse Results */}
+              {srilInverseStates.length > 0 && (
+                <div className="space-y-2 mt-4">
+                  <Label className="text-xs text-muted-foreground">REKONSTRUIERTE ZEITREIHE</Label>
+                  <div className="bg-background p-2 rounded text-xs font-mono space-y-1 max-h-48 overflow-auto">
+                    {srilInverseStates.map((s, i) => (
+                      <div key={i} className={`${s.t === 0 ? "text-green-400 font-bold" : "text-[hsl(280,100%,70%)]"}`}>
+                        T={s.t}: H={s.H.toFixed(3)} N={s.N.toFixed(3)} G={s.G.toFixed(3)}
+                        {s.t === 0 && " ← URSPRUNG"}
+                      </div>
+                    ))}
+                  </div>
+                  {srilInverseStates[0]?.t === 0 && (
+                    <div className="bg-green-900/30 border border-green-500 rounded p-2 text-xs text-green-400">
+                      <div className="font-bold mb-1">URSPRUNG GEFUNDEN:</div>
+                      <div>H(0) = {srilInverseStates[0].H.toFixed(4)}</div>
+                      <div>N(0) = {srilInverseStates[0].N.toFixed(4)}</div>
+                      <div>G(0) = {srilInverseStates[0].G.toFixed(4)}</div>
+                    </div>
+                  )}
                 </div>
               )}
             </TabsContent>
