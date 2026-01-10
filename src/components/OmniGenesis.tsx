@@ -4,7 +4,66 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Box, Target, Layers, Zap, Play, RotateCcw, Download, Circle } from "lucide-react";
+import { Box, Target, Layers, Zap, Play, RotateCcw, Download, Circle, AlertTriangle, Square, Cpu } from "lucide-react";
+
+// SECP256K1 Curve Order
+const N_CURVE = BigInt("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
+const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+
+interface ExecutorResult {
+  iteration: bigint;
+  privateKeyHex: string;
+  wif: string;
+}
+
+// Modular inverse using Extended Euclidean Algorithm
+function modInverse(a: bigint, m: bigint): bigint {
+  let m0 = m, y = 0n, x = 1n;
+  if (m === 1n) return 0n;
+  while (a > 1n) {
+    const q = a / m;
+    let t = m;
+    m = a % m;
+    a = t;
+    t = y;
+    y = x - q * y;
+    x = t;
+  }
+  return x < 0n ? x + m0 : x;
+}
+
+// SHA-256 helper
+async function sha256Hex(hexInput: string): Promise<string> {
+  const bytes = hexInput.match(/.{1,2}/g)?.map(byte => parseInt(byte, 16)) || [];
+  const buffer = new Uint8Array(bytes);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// WIF conversion
+async function toWIF(privateKeyHex: string): Promise<string> {
+  const step1 = "80" + privateKeyHex + "01"; // Mainnet compressed
+  const hash1 = await sha256Hex(step1);
+  const hash2 = await sha256Hex(hash1);
+  const checksum = hash2.substring(0, 8);
+  
+  let num = BigInt("0x" + step1 + checksum);
+  let result = "";
+  
+  while (num > 0n) {
+    result = BASE58_ALPHABET[Number(num % 58n)] + result;
+    num = num / 58n;
+  }
+  
+  // Handle leading zeros
+  for (let i = 0; i < step1.length; i += 2) {
+    if (step1.substring(i, i + 2) === "00") {
+      result = '1' + result;
+    } else break;
+  }
+  
+  return result;
+}
 
 // SRIL-Koeffizienten
 const ALPHA = 0.245; // Harmonische Kopplung
@@ -64,6 +123,22 @@ export const OmniGenesis = () => {
   const [matrixBasis, setMatrixBasis] = useState("66");
   const [matrixResult, setMatrixResult] = useState<number[][]>([]);
   const [kValue, setKValue] = useState("");
+  
+  // Executor State
+  const [execZ, setExecZ] = useState("3b72c9183424d96c9c8646276840748259024024345474805721115592882195");
+  const [execR, setExecR] = useState("D7D3C6E803975C46487920A4B85BAA2F33C4E3D594F3BA2B770F70CCBD330B5F");
+  const [execS, setExecS] = useState("4294967295");
+  const [execH, setExecH] = useState("3340");
+  const [execN, setExecN] = useState("3360");
+  const [execOffset, setExecOffset] = useState("0");
+  const [execRunning, setExecRunning] = useState(false);
+  const [execResults, setExecResults] = useState<ExecutorResult[]>([]);
+  const [execCount, setExecCount] = useState(0n);
+  const [execSpeed, setExecSpeed] = useState(0);
+  const execRunningRef = useRef(false);
+  const execStartTime = useRef(Date.now());
+  const lastSpeedUpdate = useRef(performance.now());
+  const keysThisSecond = useRef(0);
   
   // Logs
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -337,6 +412,88 @@ export const OmniGenesis = () => {
     };
   }, []);
 
+  // Executor Loop
+  const runExecutor = useCallback(async () => {
+    if (!execRunningRef.current) return;
+    
+    try {
+      const z = BigInt("0x" + execZ.replace(/^0x/i, ''));
+      const r = BigInt("0x" + execR.replace(/^0x/i, ''));
+      const s = BigInt(execS);
+      const h = BigInt(execH);
+      const n = BigInt(execN);
+      const rInv = modInverse(r, N_CURVE);
+      
+      const BATCH_SIZE = 100;
+      const newResults: ExecutorResult[] = [];
+      
+      for (let i = 0; i < BATCH_SIZE && execRunningRef.current; i++) {
+        const iteration = execCount + BigInt(i + 1);
+        
+        // k = (h * n) + iteration (deterministic nonce - INSECURE!)
+        const k = (h * n) + iteration;
+        
+        // d = (s * k - z) * r^-1 mod N
+        let numerator = (s * k - z) % N_CURVE;
+        if (numerator < 0n) numerator += N_CURVE;
+        const privateKey = (numerator * rInv) % N_CURVE;
+        
+        const privateKeyHex = privateKey.toString(16).padStart(64, '0');
+        const wif = await toWIF(privateKeyHex);
+        
+        newResults.push({ iteration, privateKeyHex, wif });
+        keysThisSecond.current++;
+      }
+      
+      setExecCount(prev => prev + BigInt(BATCH_SIZE));
+      setExecResults(prev => [...newResults.reverse(), ...prev].slice(0, 200));
+      
+      // Update speed
+      const now = performance.now();
+      if (now - lastSpeedUpdate.current > 1000) {
+        setExecSpeed(keysThisSecond.current);
+        keysThisSecond.current = 0;
+        lastSpeedUpdate.current = now;
+      }
+      
+      if (execRunningRef.current) {
+        requestAnimationFrame(() => runExecutor());
+      }
+    } catch (err) {
+      addLog(`Executor Fehler: ${err}`, "error");
+      stopExecutor();
+    }
+  }, [execZ, execR, execS, execH, execN, execCount, addLog]);
+  
+  const startExecutor = useCallback(() => {
+    if (execRunning) return;
+    execRunningRef.current = true;
+    setExecRunning(true);
+    setExecCount(BigInt(execOffset));
+    execStartTime.current = Date.now();
+    keysThisSecond.current = 0;
+    addLog("Executor gestartet - WARNUNG: Deterministische Nonces!", "warning");
+    runExecutor();
+  }, [execOffset, addLog, runExecutor, execRunning]);
+  
+  const stopExecutor = useCallback(() => {
+    execRunningRef.current = false;
+    setExecRunning(false);
+    setExecSpeed(0);
+    addLog("Executor gestoppt", "info");
+  }, [addLog]);
+  
+  const downloadResults = useCallback(() => {
+    const csv = "Iteration,PrivateKey,WIF\n" + 
+      execResults.map(r => `${r.iteration},${r.privateKeyHex},${r.wif}`).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `omnigenesis_keys_${Date.now()}.csv`;
+    a.click();
+  }, [execResults]);
+
   const downloadState = () => {
     const data = {
       sril: srilStates,
@@ -374,6 +531,7 @@ export const OmniGenesis = () => {
             <TabsList className="w-full justify-start rounded-none border-b border-border bg-transparent p-0">
               <TabsTrigger value="sril" className="rounded-none data-[state=active]:bg-background text-xs">SRIL</TabsTrigger>
               <TabsTrigger value="matrix" className="rounded-none data-[state=active]:bg-background text-xs">MATRIX</TabsTrigger>
+              <TabsTrigger value="executor" className="rounded-none data-[state=active]:bg-background text-xs text-destructive">EXECUTOR</TabsTrigger>
             </TabsList>
             
             <TabsContent value="sril" className="flex-1 p-4 space-y-4 overflow-auto">
@@ -455,6 +613,71 @@ export const OmniGenesis = () => {
                 </div>
               )}
             </TabsContent>
+            
+            <TabsContent value="executor" className="flex-1 p-4 space-y-3 overflow-auto">
+              <div className="bg-destructive/20 border border-destructive rounded p-2 text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-destructive" />
+                <span>UNSICHERE SCHLÜSSELGENERIERUNG (Demo)</span>
+              </div>
+              
+              <div className="space-y-2">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Z-HASH</Label>
+                  <Input value={execZ} onChange={e => setExecZ(e.target.value)} className="font-mono text-xs bg-background" />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">SIG-R</Label>
+                  <Input value={execR} onChange={e => setExecR(e.target.value)} className="font-mono text-xs bg-background" />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">SIG-S</Label>
+                  <Input value={execS} onChange={e => setExecS(e.target.value)} className="font-mono text-xs bg-background" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">H (Linke)</Label>
+                    <Input value={execH} onChange={e => setExecH(e.target.value)} className="font-mono text-xs bg-background" />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">N (Linke)</Label>
+                    <Input value={execN} onChange={e => setExecN(e.target.value)} className="font-mono text-xs bg-background" />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">START-OFFSET</Label>
+                  <Input value={execOffset} onChange={e => setExecOffset(e.target.value)} className="font-mono text-xs bg-background" />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                {!execRunning ? (
+                  <Button onClick={startExecutor} className="w-full bg-destructive hover:bg-destructive/80">
+                    <Play className="w-4 h-4 mr-2" />
+                    STARTEN (UNSICHER)
+                  </Button>
+                ) : (
+                  <Button onClick={stopExecutor} variant="outline" className="w-full border-destructive text-destructive">
+                    <Square className="w-4 h-4 mr-2" />
+                    STOPPEN
+                  </Button>
+                )}
+                <Button onClick={downloadResults} variant="outline" size="sm" className="w-full" disabled={execResults.length === 0}>
+                  <Download className="w-3 h-3 mr-1" />
+                  CSV Export ({execResults.length})
+                </Button>
+              </div>
+              
+              <div className="text-xs space-y-1 font-mono bg-background p-2 rounded">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Keys:</span>
+                  <span className="text-[hsl(180,100%,50%)]">{execCount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Speed:</span>
+                  <span className="text-green-400">{execSpeed} Keys/s</span>
+                </div>
+              </div>
+            </TabsContent>
           </Tabs>
         </div>
 
@@ -471,6 +694,9 @@ export const OmniGenesis = () => {
               <TabsTrigger value="moire" className="rounded-none data-[state=active]:bg-background text-xs gap-1" onClick={drawMoire}>
                 <Layers className="w-3 h-3" /> MOIRÉ
               </TabsTrigger>
+              <TabsTrigger value="stream" className="rounded-none data-[state=active]:bg-background text-xs gap-1">
+                <Cpu className="w-3 h-3" /> STREAM
+              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="ulam" className="flex-1 flex items-center justify-center bg-black p-4">
@@ -483,6 +709,32 @@ export const OmniGenesis = () => {
             
             <TabsContent value="moire" className="flex-1 relative bg-black overflow-hidden">
               <canvas ref={moireCanvasRef} className="absolute inset-0 w-full h-full" />
+            </TabsContent>
+            
+            <TabsContent value="stream" className="flex-1 bg-black overflow-hidden flex flex-col">
+              <div className="p-2 border-b border-border text-xs text-muted-foreground flex justify-between items-center">
+                <span>KEY DERIVATION STREAM</span>
+                <span className={execRunning ? "text-green-400 animate-pulse" : "text-muted-foreground"}>
+                  {execRunning ? "● LIVE" : "○ IDLE"}
+                </span>
+              </div>
+              <ScrollArea className="flex-1">
+                <div className="p-2 font-mono text-xs space-y-0.5">
+                  {execResults.length === 0 ? (
+                    <div className="text-muted-foreground p-4 text-center">
+                      Starte den Executor um Keys zu generieren...
+                    </div>
+                  ) : (
+                    execResults.map((r, i) => (
+                      <div key={i} className="flex gap-2 border-b border-border/20 py-1">
+                        <span className="text-muted-foreground w-20 shrink-0">{r.iteration.toString().padStart(8, '0')}</span>
+                        <span className="text-[hsl(30,100%,50%)] truncate flex-1">{r.privateKeyHex.substring(0, 24)}...</span>
+                        <span className="text-green-400 shrink-0">{r.wif.substring(0, 12)}...</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
             </TabsContent>
           </Tabs>
         </div>
