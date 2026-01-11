@@ -66,12 +66,12 @@ async function toWIF(privateKeyHex: string): Promise<string> {
   return result;
 }
 
-// SRIL-Koeffizienten
-const ALPHA = 0.245; // Harmonische Kopplung
-const BETA = 0.152;  // Entropie-Abfluss
-const GAMMA = 0.985; // Drift-Dämpfung
-const DELTA = 0.112; // Phasen-Kopplung
-const ETA = 0.088;   // Wachstums-Impuls
+// SRIL-Koeffizienten (empirisch kalibriert)
+const ALPHA = 0.245;   // Harmonische Kopplung
+const BETA = 0.152;    // Entropie-Abfluss
+const GAMMA = 1.1487;  // Navigations-Drift (korrigiert: war 0.985, empirisch 1.1487)
+const DELTA = 0.112;   // Phasen-Kopplung
+const ETA = 0.088;     // Wachstums-Impuls
 
 interface SRILState {
   t: number;
@@ -80,71 +80,177 @@ interface SRILState {
   G: number;
 }
 
+interface SRILStateHighPrecision extends SRILState {
+  eps_H?: number;
+  eps_N?: number;
+  eps_G?: number;
+}
+
+interface RoundTripResult {
+  forward: SRILStateHighPrecision[];
+  backward: SRILStateHighPrecision[];
+  errors: { t: number; deltaH: number; deltaN: number; deltaG: number; euclidean: number }[];
+  totalError: number;
+  iterations: number;
+}
+
 interface LogEntry {
   time: string;
   message: string;
   type: "info" | "success" | "warning" | "error";
 }
 
-// SRIL Vorwärts-Berechnung
-function computeSRIL(state: SRILState): SRILState {
-  const H_new = state.H + (ALPHA * state.N) - (BETA * state.G);
-  const N_new = (GAMMA * state.N) + (DELTA * Math.abs(state.H));
-  const G_new = state.G + (ETA * (H_new + N_new));
+// Perturbation functions
+function eps_H(t: number): number {
+  return 0.001 * Math.sin(2 * Math.PI * t / 100);
+}
+
+function eps_N(t: number): number {
+  return 0.0005 * Math.cos(2 * Math.PI * t / 73);
+}
+
+function eps_G(t: number): number {
+  return 0.0002 * Math.sin(2 * Math.PI * t / 37 + Math.PI / 4);
+}
+
+// SRIL Vorwärts-Berechnung (mit Perturbationen)
+function computeSRIL(state: SRILState, withPerturbation = true): SRILStateHighPrecision {
+  const t = state.t;
+  const eH = withPerturbation ? eps_H(t) : 0;
+  const eN = withPerturbation ? eps_N(t) : 0;
+  const eG = withPerturbation ? eps_G(t) : 0;
+  
+  // H(t+1) = H(t) + α·N(t) - β·G(t) + ε_H(t)
+  const H_new = state.H + (ALPHA * state.N) - (BETA * state.G) + eH;
+  
+  // N(t+1) = γ·N(t) + δ·H(t) + ε_N(t)
+  // Note: δ·|H(t)|·sgn(H(t)) = δ·H(t) for all H
+  const N_new = (GAMMA * state.N) + (DELTA * state.H) + eN;
+  
+  // G(t+1) = G(t) + η·(H(t+1)+N(t+1))·[1 + 0.01·tanh(G(t)/10)] + ε_G(t)
+  const tanhFactor = 1 + 0.01 * Math.tanh(state.G / 10);
+  const G_new = state.G + (ETA * (H_new + N_new) * tanhFactor) + eG;
   
   return {
     t: state.t + 1,
     H: H_new,
     N: N_new,
-    G: G_new
+    G: G_new,
+    eps_H: eH,
+    eps_N: eN,
+    eps_G: eG
   };
 }
 
-// SRIL Rückwärts-Berechnung (Inverse)
-// Gegeben: H(t+1), N(t+1), G(t+1) → Berechne H(t), N(t), G(t)
-// Verwendet Newton-Raphson Iteration zur Lösung des gekoppelten Systems
-function computeSRILInverse(nextState: SRILState, maxIterations = 100, tolerance = 1e-10): SRILState {
-  // Initialer Schätzwert: lineare Rückextrapolation
-  let H_t = nextState.H;
+// SRIL Rückwärts-Berechnung (Newton-Raphson Iteration)
+// Löst das gekoppelte System iterativ
+function computeSRILInverse(nextState: SRILState, withPerturbation = true, maxIterations = 100, tolerance = 1e-12): SRILStateHighPrecision {
+  const t = nextState.t - 1;
+  const eH = withPerturbation ? eps_H(t) : 0;
+  const eN = withPerturbation ? eps_N(t) : 0;
+  const eG = withPerturbation ? eps_G(t) : 0;
+  
+  // Initiale Schätzwerte
+  let H_t = nextState.H - ALPHA * nextState.N + BETA * nextState.G;
   let N_t = nextState.N / GAMMA;
-  let G_t = nextState.G * 0.95;
+  let G_t = nextState.G - ETA * (nextState.H + nextState.N);
   
   for (let iter = 0; iter < maxIterations; iter++) {
     // Vorwärts-Berechnung mit aktueller Schätzung
-    const H_next_calc = H_t + (ALPHA * N_t) - (BETA * G_t);
-    const N_next_calc = (GAMMA * N_t) + (DELTA * Math.abs(H_t));
-    const G_next_calc = G_t + (ETA * (H_next_calc + N_next_calc));
+    const H_calc = H_t + (ALPHA * N_t) - (BETA * G_t) + eH;
+    const N_calc = (GAMMA * N_t) + (DELTA * H_t) + eN;
+    const tanhFactor = 1 + 0.01 * Math.tanh(G_t / 10);
+    const G_calc = G_t + (ETA * (H_calc + N_calc) * tanhFactor) + eG;
     
-    // Residuen (Fehler)
-    const errH = nextState.H - H_next_calc;
-    const errN = nextState.N - N_next_calc;
-    const errG = nextState.G - G_next_calc;
+    // Residuen
+    const errH = nextState.H - H_calc;
+    const errN = nextState.N - N_calc;
+    const errG = nextState.G - G_calc;
     
     const totalError = Math.sqrt(errH*errH + errN*errN + errG*errG);
     if (totalError < tolerance) break;
     
-    // Jacobian-basierte Korrektur (vereinfacht)
-    // ∂H_next/∂H_t = 1, ∂H_next/∂N_t = α, ∂H_next/∂G_t = -β
-    // ∂N_next/∂H_t = ±δ, ∂N_next/∂N_t = γ, ∂N_next/∂G_t = 0
-    // ∂G_next/∂G_t = 1 + η*(∂H_next/∂G_t + 0) = 1 - η*β
+    // Jacobian-basierte Korrektur
+    // J = [∂F_H/∂H, ∂F_H/∂N, ∂F_H/∂G]
+    //     [∂F_N/∂H, ∂F_N/∂N, ∂F_N/∂G]
+    //     [∂F_G/∂H, ∂F_G/∂N, ∂F_G/∂G]
     
-    const signH = H_t >= 0 ? 1 : -1;
+    const j11 = 1;                // ∂H_new/∂H
+    const j12 = ALPHA;            // ∂H_new/∂N
+    const j13 = -BETA;            // ∂H_new/∂G
+    const j21 = DELTA;            // ∂N_new/∂H
+    const j22 = GAMMA;            // ∂N_new/∂N
+    const j23 = 0;                // ∂N_new/∂G
     
-    // Inverse Jacobian Approximation für Korrektur
-    const detFactor = 1 / (GAMMA * (1 - ETA * BETA) - ALPHA * DELTA * signH * ETA);
+    // For G: ∂G_new/∂H = η·tanhFactor, ∂G_new/∂N = η·tanhFactor
+    // ∂G_new/∂G = 1 + η·(H_new+N_new)·0.01·sech²(G/10)·0.1 + η·tanhFactor·(-β)
+    const sechSq = 1 / Math.pow(Math.cosh(G_t / 10), 2);
+    const dTanh_dG = 0.01 * sechSq * 0.1;
     
-    // Korrektur anwenden (gedämpft für Stabilität)
-    const damping = 0.5;
-    H_t += damping * (errH + ALPHA * errN / GAMMA);
-    N_t += damping * (errN / GAMMA);
-    G_t += damping * (errG / (1 - ETA * BETA));
+    const j31 = ETA * tanhFactor * (1 + j11 + j21);  // indirect via H_new, N_new
+    const j32 = ETA * tanhFactor * (j12 + j22);
+    const j33 = 1 + ETA * (H_calc + N_calc) * dTanh_dG + ETA * tanhFactor * j13;
+    
+    // Simplified iterative correction with damping
+    const damping = 0.6;
+    const factor = 1 + ALPHA * DELTA / GAMMA;
+    
+    H_t += damping * (errH + ALPHA * errN / GAMMA) / factor;
+    N_t += damping * (errN - DELTA * errH / factor) / GAMMA;
+    G_t += damping * errG / (1 + ETA * (1 - BETA));
   }
   
   return {
-    t: nextState.t - 1,
+    t: t,
     H: H_t,
     N: N_t,
-    G: G_t
+    G: G_t,
+    eps_H: eH,
+    eps_N: eN,
+    eps_G: eG
+  };
+}
+
+// Vollständige Rundreise: T=0 → T=n → T=0
+function computeRoundTrip(H0: number, N0: number, G0: number, steps: number, withPerturbation = true): RoundTripResult {
+  // Phase 1: Vorwärts
+  const forward: SRILStateHighPrecision[] = [{ t: 0, H: H0, N: N0, G: G0 }];
+  let current: SRILState = { t: 0, H: H0, N: N0, G: G0 };
+  
+  for (let i = 0; i < steps; i++) {
+    current = computeSRIL(current, withPerturbation);
+    forward.push(current);
+  }
+  
+  // Phase 2: Rückwärts
+  const backward: SRILStateHighPrecision[] = [forward[forward.length - 1]];
+  current = forward[forward.length - 1];
+  
+  for (let i = steps; i > 0; i--) {
+    current = computeSRILInverse(current, withPerturbation);
+    backward.unshift(current);
+  }
+  
+  // Phase 3: Fehleranalyse
+  const errors: { t: number; deltaH: number; deltaN: number; deltaG: number; euclidean: number }[] = [];
+  let totalError = 0;
+  
+  for (let i = 0; i <= steps; i++) {
+    const deltaH = backward[i].H - forward[i].H;
+    const deltaN = backward[i].N - forward[i].N;
+    const deltaG = backward[i].G - forward[i].G;
+    const euclidean = Math.sqrt(deltaH*deltaH + deltaN*deltaN + deltaG*deltaG);
+    
+    errors.push({ t: i, deltaH, deltaN, deltaG, euclidean });
+    totalError += euclidean;
+  }
+  
+  return {
+    forward,
+    backward,
+    errors,
+    totalError: totalError / (steps + 1),
+    iterations: steps
   };
 }
 
@@ -176,6 +282,12 @@ export const OmniGenesis = () => {
   // Chaos-Sensitivitäts-Analyse
   const [chaosPerturbation, setChaosPerturbation] = useState(0);
   const [chaosResults, setChaosResults] = useState<{ delta: number; origin: SRILState }[]>([]);
+  
+  // Rundreise-Analyse (T=0 → T=5 → T=0)
+  const [roundTripResult, setRoundTripResult] = useState<RoundTripResult | null>(null);
+  const [roundTripSteps, setRoundTripSteps] = useState("5");
+  const [usePerturbations, setUsePerturbations] = useState(true);
+  const [isRunningRoundTrip, setIsRunningRoundTrip] = useState(false);
   
   // Matrix State
   const [matrixH, setMatrixH] = useState("-3.340");
@@ -375,7 +487,146 @@ export const OmniGenesis = () => {
     }
   }, [srilStates, srilInverseStates, chaosResults, addLog]);
 
-  // Matrix LLL-Reduktion
+  // Rundreise-Berechnung: T=0 → T=n → T=0 → T=n → T=0
+  const runRoundTrip = useCallback(async () => {
+    const H0 = parseFloat(h0);
+    const N0 = parseFloat(n0);
+    const G0 = parseFloat(g0);
+    const steps = parseInt(roundTripSteps);
+    
+    if (isNaN(H0) || isNaN(N0) || isNaN(G0) || isNaN(steps) || steps < 1) {
+      addLog("FEHLER: Ungültige Parameter für Rundreise", "error");
+      return;
+    }
+    
+    setIsRunningRoundTrip(true);
+    addLog(`RUNDREISE GESTARTET: T=0 → T=${steps} → T=0`, "warning");
+    addLog(`Koeffizienten: α=${ALPHA}, β=${BETA}, γ=${GAMMA}, δ=${DELTA}, η=${ETA}`, "info");
+    addLog(`Perturbationen: ${usePerturbations ? "AKTIV" : "DEAKTIVIERT"}`, "info");
+    
+    await new Promise(r => setTimeout(r, 100));
+    
+    // Phase 1: Vorwärts
+    addLog("═══ PHASE 1: VORWÄRTS T=0 → T=" + steps + " ═══", "success");
+    const forward: SRILStateHighPrecision[] = [{ t: 0, H: H0, N: N0, G: G0 }];
+    let current: SRILState = { t: 0, H: H0, N: N0, G: G0 };
+    
+    for (let i = 0; i < steps; i++) {
+      await new Promise(r => setTimeout(r, 150));
+      current = computeSRIL(current, usePerturbations);
+      forward.push(current);
+      const eps = usePerturbations ? ` [ε_H=${eps_H(i).toFixed(8)}, ε_N=${eps_N(i).toFixed(8)}, ε_G=${eps_G(i).toFixed(8)}]` : "";
+      addLog(`T=${current.t}: H=${current.H.toFixed(12)}, N=${current.N.toFixed(12)}, G=${current.G.toFixed(12)}${eps}`, "info");
+    }
+    
+    // Phase 2: Rückwärts
+    await new Promise(r => setTimeout(r, 300));
+    addLog("═══ PHASE 2: RÜCKWÄRTS T=" + steps + " → T=0 ═══", "warning");
+    
+    const backward: SRILStateHighPrecision[] = [forward[forward.length - 1]];
+    current = forward[forward.length - 1];
+    
+    for (let i = steps; i > 0; i--) {
+      await new Promise(r => setTimeout(r, 150));
+      current = computeSRILInverse(current, usePerturbations);
+      backward.unshift(current);
+      addLog(`T=${current.t}: H=${current.H.toFixed(12)}, N=${current.N.toFixed(12)}, G=${current.G.toFixed(12)}`, 
+        current.t === 0 ? "success" : "info");
+    }
+    
+    // Phase 3: Fehleranalyse
+    await new Promise(r => setTimeout(r, 300));
+    addLog("═══ PHASE 3: FEHLERANALYSE ═══", "error");
+    
+    const errors: { t: number; deltaH: number; deltaN: number; deltaG: number; euclidean: number }[] = [];
+    let maxError = 0;
+    
+    for (let i = 0; i <= steps; i++) {
+      const deltaH = backward[i].H - forward[i].H;
+      const deltaN = backward[i].N - forward[i].N;
+      const deltaG = backward[i].G - forward[i].G;
+      const euclidean = Math.sqrt(deltaH*deltaH + deltaN*deltaN + deltaG*deltaG);
+      
+      errors.push({ t: i, deltaH, deltaN, deltaG, euclidean });
+      maxError = Math.max(maxError, euclidean);
+      
+      if (i === 0 || i === steps) {
+        addLog(`T=${i}: ΔH=${deltaH.toExponential(4)}, ΔN=${deltaN.toExponential(4)}, ΔG=${deltaG.toExponential(4)} | ||Δ||=${euclidean.toExponential(4)}`, 
+          euclidean < 1e-8 ? "success" : euclidean < 1e-4 ? "warning" : "error");
+      }
+    }
+    
+    const avgError = errors.reduce((sum, e) => sum + e.euclidean, 0) / errors.length;
+    
+    addLog(`GESAMTERGEBNIS: Max.Fehler=${maxError.toExponential(6)}, Durchschnitt=${avgError.toExponential(6)}`, 
+      maxError < 1e-6 ? "success" : "warning");
+    addLog(`URSPRUNG REKONSTRUIERT: H(0)=${backward[0].H.toFixed(15)} (Δ=${(backward[0].H - H0).toExponential(4)})`, "info");
+    addLog(`                       N(0)=${backward[0].N.toFixed(15)} (Δ=${(backward[0].N - N0).toExponential(4)})`, "info");
+    addLog(`                       G(0)=${backward[0].G.toFixed(15)} (Δ=${(backward[0].G - G0).toExponential(4)})`, "info");
+    
+    setRoundTripResult({
+      forward,
+      backward,
+      errors,
+      totalError: avgError,
+      iterations: steps
+    });
+    
+    setIsRunningRoundTrip(false);
+    addLog("RUNDREISE ABGESCHLOSSEN", "success");
+  }, [h0, n0, g0, roundTripSteps, usePerturbations, addLog]);
+
+  // Export Rundreise als vollständigen Report
+  const exportRoundTrip = useCallback(() => {
+    if (!roundTripResult) return;
+    
+    const report = {
+      metadata: {
+        timestamp: new Date().toISOString(),
+        coefficients: { ALPHA, BETA, GAMMA, DELTA, ETA },
+        perturbations: usePerturbations,
+        steps: roundTripResult.iterations
+      },
+      origin: {
+        H0: parseFloat(h0),
+        N0: parseFloat(n0),
+        G0: parseFloat(g0)
+      },
+      forward: roundTripResult.forward.map(s => ({
+        t: s.t,
+        H: s.H.toFixed(15),
+        N: s.N.toFixed(15),
+        G: s.G.toFixed(15)
+      })),
+      backward: roundTripResult.backward.map(s => ({
+        t: s.t,
+        H: s.H.toFixed(15),
+        N: s.N.toFixed(15),
+        G: s.G.toFixed(15)
+      })),
+      errors: roundTripResult.errors.map(e => ({
+        t: e.t,
+        deltaH: e.deltaH.toExponential(10),
+        deltaN: e.deltaN.toExponential(10),
+        deltaG: e.deltaG.toExponential(10),
+        euclidean: e.euclidean.toExponential(10)
+      })),
+      summary: {
+        totalError: roundTripResult.totalError.toExponential(10),
+        maxError: Math.max(...roundTripResult.errors.map(e => e.euclidean)).toExponential(10),
+        reversibility: roundTripResult.totalError < 1e-8 ? "PERFEKT" : roundTripResult.totalError < 1e-4 ? "GUT" : "KRITISCH"
+      }
+    };
+    
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `sril_roundtrip_${Date.now()}.json`;
+    a.click();
+    addLog("Rundreise-Report exportiert", "success");
+  }, [roundTripResult, h0, n0, g0, usePerturbations, addLog]);
+
   const runMatrixReduction = useCallback(() => {
     const H = parseFloat(matrixH);
     const N = parseFloat(matrixN);
@@ -713,8 +964,9 @@ export const OmniGenesis = () => {
         {/* Left Panel - Controls */}
         <div className="w-80 border-r border-border flex flex-col bg-card">
           <Tabs defaultValue="sril" className="flex-1 flex flex-col">
-            <TabsList className="w-full justify-start rounded-none border-b border-border bg-transparent p-0">
+            <TabsList className="w-full justify-start rounded-none border-b border-border bg-transparent p-0 flex-wrap">
               <TabsTrigger value="sril" className="rounded-none data-[state=active]:bg-background text-xs">SRIL</TabsTrigger>
+              <TabsTrigger value="roundtrip" className="rounded-none data-[state=active]:bg-background text-xs text-green-400">RUNDREISE</TabsTrigger>
               <TabsTrigger value="inverse" className="rounded-none data-[state=active]:bg-background text-xs">INVERSE</TabsTrigger>
               <TabsTrigger value="matrix" className="rounded-none data-[state=active]:bg-background text-xs">MATRIX</TabsTrigger>
               <TabsTrigger value="executor" className="rounded-none data-[state=active]:bg-background text-xs text-destructive">EXEC</TabsTrigger>
@@ -751,6 +1003,145 @@ export const OmniGenesis = () => {
                         T={s.t}: H={s.H.toFixed(3)} N={s.N.toFixed(3)} G={s.G.toFixed(3)}
                       </div>
                     ))}
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+            
+            {/* RUNDREISE Tab - vollständige Hin-und-Zurück Berechnung */}
+            <TabsContent value="roundtrip" className="flex-1 p-4 space-y-4 overflow-auto">
+              <div className="bg-green-900/30 border border-green-500 rounded p-2 text-xs">
+                <span className="text-green-400 font-bold">VOLLSTÄNDIGE RUNDREISE</span>
+                <p className="text-muted-foreground mt-1">T=0 → T=n → T=0 mit Fehleranalyse</p>
+              </div>
+              
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground">SCHRITTE (T=0 → T=n)</Label>
+                  <Input value={roundTripSteps} onChange={e => setRoundTripSteps(e.target.value)} className="font-mono text-xs bg-background" />
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="checkbox" 
+                    checked={usePerturbations} 
+                    onChange={e => setUsePerturbations(e.target.checked)}
+                    className="rounded"
+                  />
+                  <Label className="text-xs text-muted-foreground">Perturbationen (ε_H, ε_N, ε_G)</Label>
+                </div>
+                
+                <div className="bg-background p-2 rounded text-xs font-mono space-y-1">
+                  <div className="text-muted-foreground">KOEFFIZIENTEN (empirisch):</div>
+                  <div>α = {ALPHA} (Harm. Kopplung)</div>
+                  <div>β = {BETA} (Entropie-Abfluss)</div>
+                  <div className="text-yellow-400">γ = {GAMMA} (Nav.-Drift, korrigiert!)</div>
+                  <div>δ = {DELTA} (Phasen-Kopplung)</div>
+                  <div>η = {ETA} (Wachstums-Impuls)</div>
+                </div>
+              </div>
+              
+              <Button 
+                onClick={runRoundTrip} 
+                disabled={isRunningRoundTrip} 
+                className="w-full bg-green-600 hover:bg-green-700 text-white"
+              >
+                {isRunningRoundTrip ? (
+                  <>
+                    <RotateCcw className="w-4 h-4 mr-2 animate-spin" />
+                    BERECHNE...
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4 mr-2" />
+                    RUNDREISE STARTEN
+                  </>
+                )}
+              </Button>
+              
+              {roundTripResult && (
+                <div className="space-y-3 mt-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs text-muted-foreground">ERGEBNISSE</Label>
+                    <Button variant="outline" size="sm" onClick={exportRoundTrip} className="h-6 text-xs">
+                      <Download className="w-3 h-3 mr-1" />
+                      Export
+                    </Button>
+                  </div>
+                  
+                  {/* Summary */}
+                  <div className={`p-3 rounded border ${roundTripResult.totalError < 1e-8 ? "bg-green-900/30 border-green-500" : roundTripResult.totalError < 1e-4 ? "bg-yellow-900/30 border-yellow-500" : "bg-red-900/30 border-red-500"}`}>
+                    <div className="text-xs font-bold mb-2">REVERSIBILITÄT</div>
+                    <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                      <div>Ø Fehler:</div>
+                      <div className={roundTripResult.totalError < 1e-8 ? "text-green-400" : "text-yellow-400"}>
+                        {roundTripResult.totalError.toExponential(4)}
+                      </div>
+                      <div>Max Fehler:</div>
+                      <div>{Math.max(...roundTripResult.errors.map(e => e.euclidean)).toExponential(4)}</div>
+                      <div>Status:</div>
+                      <div className={roundTripResult.totalError < 1e-8 ? "text-green-400" : "text-yellow-400"}>
+                        {roundTripResult.totalError < 1e-8 ? "PERFEKT" : roundTripResult.totalError < 1e-4 ? "GUT" : "KRITISCH"}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Error per Step */}
+                  <div className="bg-background p-2 rounded text-xs font-mono">
+                    <div className="text-muted-foreground mb-2">FEHLER PRO SCHRITT:</div>
+                    {roundTripResult.errors.map((e, i) => (
+                      <div key={i} className={`flex justify-between py-0.5 ${e.t === 0 ? "text-green-400 font-bold" : ""}`}>
+                        <span>T={e.t}</span>
+                        <span>||Δ|| = {e.euclidean.toExponential(4)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Origin Comparison */}
+                  <div className="bg-background p-2 rounded text-xs font-mono">
+                    <div className="text-muted-foreground mb-2">URSPRUNG (15 Dezimalstellen):</div>
+                    <div className="space-y-1">
+                      <div className="grid grid-cols-2 gap-1">
+                        <span className="text-[hsl(180,100%,50%)]">H(0) erwartet:</span>
+                        <span>{roundTripResult.forward[0].H.toFixed(15)}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1">
+                        <span className="text-[hsl(280,100%,70%)]">H(0) berechnet:</span>
+                        <span>{roundTripResult.backward[0].H.toFixed(15)}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1 text-green-400">
+                        <span>ΔH:</span>
+                        <span>{(roundTripResult.backward[0].H - roundTripResult.forward[0].H).toExponential(10)}</span>
+                      </div>
+                    </div>
+                    <div className="mt-2 pt-2 border-t border-border space-y-1">
+                      <div className="grid grid-cols-2 gap-1">
+                        <span className="text-[hsl(180,100%,50%)]">N(0) erwartet:</span>
+                        <span>{roundTripResult.forward[0].N.toFixed(15)}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1">
+                        <span className="text-[hsl(280,100%,70%)]">N(0) berechnet:</span>
+                        <span>{roundTripResult.backward[0].N.toFixed(15)}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1 text-green-400">
+                        <span>ΔN:</span>
+                        <span>{(roundTripResult.backward[0].N - roundTripResult.forward[0].N).toExponential(10)}</span>
+                      </div>
+                    </div>
+                    <div className="mt-2 pt-2 border-t border-border space-y-1">
+                      <div className="grid grid-cols-2 gap-1">
+                        <span className="text-[hsl(180,100%,50%)]">G(0) erwartet:</span>
+                        <span>{roundTripResult.forward[0].G.toFixed(15)}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1">
+                        <span className="text-[hsl(280,100%,70%)]">G(0) berechnet:</span>
+                        <span>{roundTripResult.backward[0].G.toFixed(15)}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1 text-green-400">
+                        <span>ΔG:</span>
+                        <span>{(roundTripResult.backward[0].G - roundTripResult.forward[0].G).toExponential(10)}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
