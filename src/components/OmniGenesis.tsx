@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Box, Target, Layers, Zap, Play, RotateCcw, Download, Circle, AlertTriangle, Square, Cpu, GitCompare } from "lucide-react";
+import { Box, Target, Layers, Zap, Play, RotateCcw, Download, Circle, AlertTriangle, Square, Cpu, GitCompare, Activity, FileJson } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
 
 // SECP256K1 Curve Order
 const N_CURVE = BigInt("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
@@ -172,6 +173,10 @@ export const OmniGenesis = () => {
   const [targetG, setTargetG] = useState("4.447");
   const [targetT, setTargetT] = useState("5");
   
+  // Chaos-Sensitivitäts-Analyse
+  const [chaosPerturbation, setChaosPerturbation] = useState(0);
+  const [chaosResults, setChaosResults] = useState<{ delta: number; origin: SRILState }[]>([]);
+  
   // Matrix State
   const [matrixH, setMatrixH] = useState("-3.340");
   const [matrixN, setMatrixN] = useState("3.360");
@@ -282,6 +287,93 @@ export const OmniGenesis = () => {
     addLog("Vergleiche mit bekannten Ur-Variablen: H(0)=-4.256, N(0)=5.824, G(0)=1.952", "warning");
     setIsRunningInverse(false);
   }, [targetH, targetN, targetG, targetT, addLog]);
+
+  // Chaos-Sensitivitäts-Analyse
+  const runChaosSensitivity = useCallback(() => {
+    const baseH = parseFloat(targetH);
+    const baseN = parseFloat(targetN);
+    const baseG = parseFloat(targetG);
+    const t = parseInt(targetT);
+    
+    if (isNaN(baseH) || isNaN(baseN) || isNaN(baseG) || isNaN(t) || t < 1) {
+      addLog("FEHLER: Ungültige Parameter für Chaos-Analyse", "error");
+      return;
+    }
+    
+    const perturbationScale = chaosPerturbation / 100; // Convert to percentage
+    const results: { delta: number; origin: SRILState }[] = [];
+    
+    // Test different perturbation levels
+    const deltas = [-2, -1, -0.5, 0, 0.5, 1, 2].map(d => d * perturbationScale);
+    
+    for (const delta of deltas) {
+      const perturbedState: SRILState = {
+        t: t,
+        H: baseH * (1 + delta),
+        N: baseN * (1 + delta),
+        G: baseG * (1 + delta)
+      };
+      
+      // Compute inverse to find origin
+      let currentState = perturbedState;
+      for (let i = t; i > 0; i--) {
+        currentState = computeSRILInverse(currentState);
+      }
+      
+      results.push({ delta: delta * 100, origin: currentState });
+    }
+    
+    setChaosResults(results);
+    addLog(`Chaos-Sensitivität analysiert mit ±${(perturbationScale * 200).toFixed(1)}% Perturbation`, "success");
+  }, [targetH, targetN, targetG, targetT, chaosPerturbation, addLog]);
+
+  // Export Vergleichsanalyse als JSON/CSV
+  const exportComparison = useCallback((format: "json" | "csv") => {
+    const data = {
+      forward: srilStates,
+      backward: srilInverseStates,
+      difference: srilStates[0] && srilInverseStates[0]?.t === 0 ? {
+        H: { expected: srilStates[0].H, calculated: srilInverseStates[0].H, delta: srilInverseStates[0].H - srilStates[0].H },
+        N: { expected: srilStates[0].N, calculated: srilInverseStates[0].N, delta: srilInverseStates[0].N - srilStates[0].N },
+        G: { expected: srilStates[0].G, calculated: srilInverseStates[0].G, delta: srilInverseStates[0].G - srilStates[0].G },
+        euclideanError: Math.sqrt(
+          Math.pow(srilStates[0].H - srilInverseStates[0].H, 2) +
+          Math.pow(srilStates[0].N - srilInverseStates[0].N, 2) +
+          Math.pow(srilStates[0].G - srilInverseStates[0].G, 2)
+        )
+      } : null,
+      chaosAnalysis: chaosResults,
+      timestamp: new Date().toISOString()
+    };
+    
+    if (format === "json") {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `sril_comparison_${Date.now()}.json`;
+      a.click();
+      addLog("JSON-Export erstellt", "success");
+    } else {
+      // CSV format
+      let csv = "Typ,T,H,N,G\n";
+      srilStates.forEach(s => csv += `Vorwärts,${s.t},${s.H},${s.N},${s.G}\n`);
+      srilInverseStates.forEach(s => csv += `Rückwärts,${s.t},${s.H},${s.N},${s.G}\n`);
+      
+      if (chaosResults.length > 0) {
+        csv += "\nChaos-Analyse\nDelta%,H(0),N(0),G(0)\n";
+        chaosResults.forEach(r => csv += `${r.delta.toFixed(2)},${r.origin.H},${r.origin.N},${r.origin.G}\n`);
+      }
+      
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `sril_comparison_${Date.now()}.csv`;
+      a.click();
+      addLog("CSV-Export erstellt", "success");
+    }
+  }, [srilStates, srilInverseStates, chaosResults, addLog]);
 
   // Matrix LLL-Reduktion
   const runMatrixReduction = useCallback(() => {
@@ -848,6 +940,9 @@ export const OmniGenesis = () => {
               <TabsTrigger value="compare" className="rounded-none data-[state=active]:bg-background text-xs gap-1">
                 <GitCompare className="w-3 h-3" /> VERGLEICH
               </TabsTrigger>
+              <TabsTrigger value="chaos" className="rounded-none data-[state=active]:bg-background text-xs gap-1">
+                <Activity className="w-3 h-3" /> CHAOS
+              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="ulam" className="flex-1 flex items-center justify-center bg-black p-4">
@@ -942,9 +1037,21 @@ export const OmniGenesis = () => {
               {/* Difference Analysis */}
               {srilStates.length > 0 && srilInverseStates.length > 0 && srilInverseStates[0]?.t === 0 && (
                 <div className="mt-4 border border-border rounded-lg p-4 bg-card">
-                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border">
-                    <GitCompare className="w-4 h-4 text-primary" />
-                    <span className="text-xs font-bold">DIFFERENZANALYSE (Ursprung: Erwartet vs. Berechnet)</span>
+                  <div className="flex items-center justify-between mb-3 pb-2 border-b border-border">
+                    <div className="flex items-center gap-2">
+                      <GitCompare className="w-4 h-4 text-primary" />
+                      <span className="text-xs font-bold">DIFFERENZANALYSE (Ursprung: Erwartet vs. Berechnet)</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => exportComparison("json")} className="h-6 text-xs px-2">
+                        <FileJson className="w-3 h-3 mr-1" />
+                        JSON
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => exportComparison("csv")} className="h-6 text-xs px-2">
+                        <Download className="w-3 h-3 mr-1" />
+                        CSV
+                      </Button>
+                    </div>
                   </div>
                   
                   <div className="grid grid-cols-4 gap-4 font-mono text-xs">
@@ -1035,6 +1142,145 @@ export const OmniGenesis = () => {
                   </div>
                 </div>
               )}
+            </TabsContent>
+            
+            {/* Chaos Sensitivity Tab */}
+            <TabsContent value="chaos" className="flex-1 bg-background overflow-auto p-4">
+              <div className="space-y-4">
+                <div className="bg-[hsl(0,100%,30%)]/20 border border-destructive rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Activity className="w-5 h-5 text-destructive" />
+                    <span className="font-bold text-destructive">CHAOS-SENSITIVITÄTS-ANALYSE</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Zeigt wie kleine Änderungen im Zielzustand zu unterschiedlichen Ursprungswerten führen (Schmetterlingseffekt)
+                  </p>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-2 block">
+                        PERTURBATION: ±{(chaosPerturbation * 2).toFixed(1)}%
+                      </Label>
+                      <Slider
+                        value={[chaosPerturbation]}
+                        onValueChange={(v) => setChaosPerturbation(v[0])}
+                        min={0}
+                        max={10}
+                        step={0.1}
+                        className="w-full"
+                      />
+                      <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                        <span>0%</span>
+                        <span>±10%</span>
+                        <span>±20%</span>
+                      </div>
+                    </div>
+                    
+                    <Button 
+                      onClick={runChaosSensitivity} 
+                      className="w-full bg-destructive hover:bg-destructive/80"
+                    >
+                      <Activity className="w-4 h-4 mr-2" />
+                      CHAOS ANALYSIEREN
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* Chaos Results */}
+                {chaosResults.length > 0 && (
+                  <div className="border border-border rounded-lg p-4 bg-card">
+                    <div className="flex items-center justify-between mb-3 pb-2 border-b border-border">
+                      <span className="text-xs font-bold">URSPRUNGS-VARIATION BEI PERTURBATION</span>
+                      <Button variant="outline" size="sm" onClick={() => exportComparison("csv")} className="h-6 text-xs px-2">
+                        <Download className="w-3 h-3 mr-1" />
+                        Export
+                      </Button>
+                    </div>
+                    
+                    <div className="space-y-2 font-mono text-xs">
+                      <div className="grid grid-cols-4 gap-2 text-muted-foreground border-b border-border pb-1">
+                        <span>ΔZIEL</span>
+                        <span>H(0)</span>
+                        <span>N(0)</span>
+                        <span>G(0)</span>
+                      </div>
+                      
+                      {chaosResults.map((r, i) => {
+                        const isBaseline = Math.abs(r.delta) < 0.001;
+                        return (
+                          <div 
+                            key={i} 
+                            className={`grid grid-cols-4 gap-2 py-1 rounded px-1 ${
+                              isBaseline ? "bg-green-500/10 border border-green-500/30" : ""
+                            }`}
+                          >
+                            <span className={isBaseline ? "text-green-400 font-bold" : r.delta < 0 ? "text-blue-400" : "text-orange-400"}>
+                              {r.delta >= 0 ? "+" : ""}{r.delta.toFixed(2)}%
+                            </span>
+                            <span className={isBaseline ? "text-green-400" : "text-[hsl(280,100%,70%)]"}>
+                              {r.origin.H.toFixed(4)}
+                            </span>
+                            <span className={isBaseline ? "text-green-400" : "text-[hsl(280,100%,70%)]"}>
+                              {r.origin.N.toFixed(4)}
+                            </span>
+                            <span className={isBaseline ? "text-green-400" : "text-[hsl(280,100%,70%)]"}>
+                              {r.origin.G.toFixed(4)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    
+                    {/* Sensitivity Metrics */}
+                    <div className="mt-4 pt-3 border-t border-border grid grid-cols-3 gap-4 text-xs">
+                      <div className="text-center">
+                        <div className="text-muted-foreground mb-1">ΔH SPREAD</div>
+                        <div className="font-mono text-destructive">
+                          {(Math.max(...chaosResults.map(r => r.origin.H)) - Math.min(...chaosResults.map(r => r.origin.H))).toFixed(4)}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-muted-foreground mb-1">ΔN SPREAD</div>
+                        <div className="font-mono text-destructive">
+                          {(Math.max(...chaosResults.map(r => r.origin.N)) - Math.min(...chaosResults.map(r => r.origin.N))).toFixed(4)}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-muted-foreground mb-1">ΔG SPREAD</div>
+                        <div className="font-mono text-destructive">
+                          {(Math.max(...chaosResults.map(r => r.origin.G)) - Math.min(...chaosResults.map(r => r.origin.G))).toFixed(4)}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Visual Bar Chart */}
+                    <div className="mt-4 pt-3 border-t border-border">
+                      <div className="text-xs text-muted-foreground mb-2">H(0) VERTEILUNG</div>
+                      <div className="space-y-1">
+                        {chaosResults.map((r, i) => {
+                          const min = Math.min(...chaosResults.map(x => x.origin.H));
+                          const max = Math.max(...chaosResults.map(x => x.origin.H));
+                          const range = max - min || 1;
+                          const width = ((r.origin.H - min) / range) * 100;
+                          const isBaseline = Math.abs(r.delta) < 0.001;
+                          
+                          return (
+                            <div key={i} className="flex items-center gap-2">
+                              <span className="text-xs w-16 text-muted-foreground">{r.delta.toFixed(1)}%</span>
+                              <div className="flex-1 h-3 bg-background rounded overflow-hidden">
+                                <div 
+                                  className={`h-full ${isBaseline ? "bg-green-500" : "bg-[hsl(280,100%,50%)]"}`}
+                                  style={{ width: `${Math.max(5, width)}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </TabsContent>
           </Tabs>
         </div>
