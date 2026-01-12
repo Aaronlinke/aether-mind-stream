@@ -6,11 +6,13 @@ import { SHA256Analyzer } from "@/components/SHA256Analyzer";
 import { LatticeAnalyzer } from "@/components/LatticeAnalyzer";
 import { LinkeSystem } from "@/components/LinkeSystem";
 import { OmniGenesis } from "@/components/OmniGenesis";
+import { Nexus } from "@/components/Nexus";
 
 const Index = () => {
-  const [mode, setMode] = useState<"omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice">("omni");
+  const [mode, setMode] = useState<"nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice">("nexus");
 
   const modes = [
+    { id: "nexus", label: "NEXUS" },
     { id: "omni", label: "OMNI" },
     { id: "linke", label: "LINKE" },
     { id: "sha256", label: "SHA-256" },
@@ -41,6 +43,7 @@ const Index = () => {
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
+        {mode === "nexus" && <Nexus />}
         {mode === "omni" && <OmniGenesis />}
         {mode === "linke" && <LinkeSystem />}
         {mode === "chat" && <MathChat />}
