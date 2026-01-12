@@ -7,11 +7,13 @@ import { LatticeAnalyzer } from "@/components/LatticeAnalyzer";
 import { LinkeSystem } from "@/components/LinkeSystem";
 import { OmniGenesis } from "@/components/OmniGenesis";
 import { Nexus } from "@/components/Nexus";
+import { Inversion } from "@/components/Inversion";
 
 const Index = () => {
-  const [mode, setMode] = useState<"nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice">("nexus");
+  const [mode, setMode] = useState<"inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice">("inversion");
 
   const modes = [
+    { id: "inversion", label: "INVERSION" },
     { id: "nexus", label: "NEXUS" },
     { id: "omni", label: "OMNI" },
     { id: "linke", label: "LINKE" },
@@ -43,6 +45,7 @@ const Index = () => {
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
+        {mode === "inversion" && <Inversion />}
         {mode === "nexus" && <Nexus />}
         {mode === "omni" && <OmniGenesis />}
         {mode === "linke" && <LinkeSystem />}
