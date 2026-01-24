@@ -8,11 +8,13 @@ import { LinkeSystem } from "@/components/LinkeSystem";
 import { OmniGenesis } from "@/components/OmniGenesis";
 import { Nexus } from "@/components/Nexus";
 import { Inversion } from "@/components/Inversion";
+import { Chronos } from "@/components/Chronos";
 
 const Index = () => {
-  const [mode, setMode] = useState<"inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice">("inversion");
+  const [mode, setMode] = useState<"chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice">("chronos");
 
   const modes = [
+    { id: "chronos", label: "CHRONOS" },
     { id: "inversion", label: "INVERSION" },
     { id: "nexus", label: "NEXUS" },
     { id: "omni", label: "OMNI" },
@@ -45,6 +47,7 @@ const Index = () => {
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
+        {mode === "chronos" && <Chronos />}
         {mode === "inversion" && <Inversion />}
         {mode === "nexus" && <Nexus />}
         {mode === "omni" && <OmniGenesis />}
