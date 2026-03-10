@@ -58,11 +58,14 @@ const Index = () => {
         {mode === "nexus" && <Nexus />}
         {mode === "omni" && <OmniGenesis />}
         {mode === "linke" && <LinkeSystem />}
+        {mode === "formeln" && <FormulaLibrary />}
+        {mode === "hexgitter" && <HexLattice />}
         {mode === "chat" && <MathChat />}
         {mode === "debate" && <DebateChat />}
         {mode === "tools" && <CryptoTools />}
         {mode === "sha256" && <SHA256Analyzer />}
         {mode === "lattice" && <LatticeAnalyzer />}
+      </div>
       </div>
     </div>
   );
