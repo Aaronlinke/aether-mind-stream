@@ -66,9 +66,9 @@ const Index = () => {
         {mode === "sha256" && <SHA256Analyzer />}
         {mode === "lattice" && <LatticeAnalyzer />}
       </div>
-      </div>
     </div>
   );
 };
 
 export default Index;
+
