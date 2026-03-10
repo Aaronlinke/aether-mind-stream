@@ -9,22 +9,28 @@ import { OmniGenesis } from "@/components/OmniGenesis";
 import { Nexus } from "@/components/Nexus";
 import { Inversion } from "@/components/Inversion";
 import { Chronos } from "@/components/Chronos";
+import { FormulaLibrary } from "@/components/FormulaLibrary";
+import { HexLattice } from "@/components/HexLattice";
+
+type Mode = "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter";
 
 const Index = () => {
-  const [mode, setMode] = useState<"chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice">("chronos");
+  const [mode, setMode] = useState<Mode>("chronos");
 
-  const modes = [
+  const modes: { id: Mode; label: string }[] = [
     { id: "chronos", label: "CHRONOS" },
     { id: "inversion", label: "INVERSION" },
     { id: "nexus", label: "NEXUS" },
     { id: "omni", label: "OMNI" },
     { id: "linke", label: "LINKE" },
+    { id: "formeln", label: "FORMELN" },
+    { id: "hexgitter", label: "HEX-GITTER" },
     { id: "sha256", label: "SHA-256" },
     { id: "lattice", label: "GITTER" },
     { id: "tools", label: "TOOLS" },
     { id: "chat", label: "CHAT" },
     { id: "debate", label: "DEBATTE" },
-  ] as const;
+  ];
 
   return (
     <div className="h-screen flex flex-col">
@@ -52,6 +58,8 @@ const Index = () => {
         {mode === "nexus" && <Nexus />}
         {mode === "omni" && <OmniGenesis />}
         {mode === "linke" && <LinkeSystem />}
+        {mode === "formeln" && <FormulaLibrary />}
+        {mode === "hexgitter" && <HexLattice />}
         {mode === "chat" && <MathChat />}
         {mode === "debate" && <DebateChat />}
         {mode === "tools" && <CryptoTools />}
@@ -63,3 +71,4 @@ const Index = () => {
 };
 
 export default Index;
+
