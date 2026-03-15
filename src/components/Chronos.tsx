@@ -107,7 +107,7 @@ export const Chronos: React.FC = () => {
   const [classicMetrics, setClassicMetrics] = useState<AttackMetrics | null>(null);
   
   // Animation refs
-  const animationRef = useRef<NodeJS.Timeout | null>(null);
+  const animationRef = useRef<ReturnType<typeof setInterval> | null>(null);
   
   // ═══════════════════════════════════════════════════════════════════════════
   // FORMAL PROOF STEPS (A-Z from user's analysis)
