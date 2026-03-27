@@ -1,5 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, Copy, Check, ChevronDown, ChevronRight, Atom, Activity, Zap, Waves, Hash, Shield, Grid3X3, Sparkles, Flame, Dna, Binary, Orbit, Globe, Swords, Bitcoin, Layers } from 'lucide-react';
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -38,6 +40,19 @@ const CATEGORY_COLORS: Record<string, string> = {
   'sril-kes': 'text-sky-400',
 };
 
+function LatexRender({ latex }: { latex: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    try {
+      katex.render(latex, ref.current, { throwOnError: false, displayMode: false, trust: true });
+    } catch {
+      if (ref.current) ref.current.textContent = latex;
+    }
+  }, [latex]);
+  return <div ref={ref} className="overflow-x-auto" />;
+}
+
 function FormulaCard({ formula, expanded, onToggle }: { formula: Formula; expanded: boolean; onToggle: () => void }) {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
@@ -65,8 +80,8 @@ function FormulaCard({ formula, expanded, onToggle }: { formula: Formula; expand
         </button>
       </div>
 
-      <div className="mt-1.5 font-mono text-xs text-primary bg-muted/50 rounded px-2 py-1.5 overflow-x-auto">
-        {formula.latex}
+      <div className="mt-1.5 bg-muted/50 rounded px-2 py-1.5 overflow-x-auto text-xs">
+        <LatexRender latex={formula.latex} />
       </div>
 
       {expanded && (
