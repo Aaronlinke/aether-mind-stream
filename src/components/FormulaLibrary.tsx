@@ -53,7 +53,7 @@ function LatexRender({ latex }: { latex: string }) {
   return <div ref={ref} className="overflow-x-auto" />;
 }
 
-
+function FormulaCard({ formula, expanded, onToggle }: { formula: Formula; expanded: boolean; onToggle: () => void }) {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
