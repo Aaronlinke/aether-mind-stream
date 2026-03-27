@@ -80,8 +80,8 @@ function FormulaCard({ formula, expanded, onToggle }: { formula: Formula; expand
         </button>
       </div>
 
-      <div className="mt-1.5 font-mono text-xs text-primary bg-muted/50 rounded px-2 py-1.5 overflow-x-auto">
-        {formula.latex}
+      <div className="mt-1.5 bg-muted/50 rounded px-2 py-1.5 overflow-x-auto text-xs">
+        <LatexRender latex={formula.latex} />
       </div>
 
       {expanded && (
