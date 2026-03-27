@@ -40,7 +40,20 @@ const CATEGORY_COLORS: Record<string, string> = {
   'sril-kes': 'text-sky-400',
 };
 
-function FormulaCard({ formula, expanded, onToggle }: { formula: Formula; expanded: boolean; onToggle: () => void }) {
+function LatexRender({ latex }: { latex: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    try {
+      katex.render(latex, ref.current, { throwOnError: false, displayMode: false, trust: true });
+    } catch {
+      if (ref.current) ref.current.textContent = latex;
+    }
+  }, [latex]);
+  return <div ref={ref} className="overflow-x-auto" />;
+}
+
+
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
