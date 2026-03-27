@@ -1,5 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, Copy, Check, ChevronDown, ChevronRight, Atom, Activity, Zap, Waves, Hash, Shield, Grid3X3, Sparkles, Flame, Dna, Binary, Orbit, Globe, Swords, Bitcoin, Layers } from 'lucide-react';
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
