@@ -73,6 +73,8 @@ const Index = () => {
         {mode === "omni" && <OmniGenesis />}
         {mode === "linke" && <LinkeSystem />}
         {mode === "formeln" && <FormulaLibrary />}
+        {mode === "export" && <FormulaExport />}
+        {mode === "logmap" && <LogisticMapViz />}
         {mode === "latex" && <LaTeXExport />}
         {mode === "hexgitter" && <HexLattice />}
         {mode === "3d" && <Lattice3D />}
