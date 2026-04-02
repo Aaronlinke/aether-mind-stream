@@ -15,8 +15,10 @@ import { SRILPipeline } from "@/components/SRILPipeline";
 import { AttackSimulator } from "@/components/AttackSimulator";
 import { LaTeXExport } from "@/components/LaTeXExport";
 import { Lattice3D } from "@/components/Lattice3D";
+import { LogisticMapViz } from "@/components/LogisticMapViz";
+import { FormulaExport } from "@/components/FormulaExport";
 
-type Mode = "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d";
+type Mode = "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export";
 
 const Index = () => {
   const [mode, setMode] = useState<Mode>("chronos");
