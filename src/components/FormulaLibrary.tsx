@@ -30,6 +30,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   chaos: 'text-red-400',
   omnigenesis: 'text-emerald-400',
   'information-theory': 'text-green-400',
+  'quantum-information': 'text-indigo-400',
   'string-theory': 'text-violet-400',
   cosmology: 'text-blue-400',
   'lattice-cryptanalysis': 'text-purple-400',
@@ -38,6 +39,12 @@ const CATEGORY_COLORS: Record<string, string> = {
   'entropy-collapse': 'text-yellow-400',
   'complexity-classes': 'text-cyan-400',
   'sril-kes': 'text-sky-400',
+  'neural-networks': 'text-pink-400',
+  'differential-geometry': 'text-fuchsia-400',
+  'algebra': 'text-lime-400',
+  'thermodynamics': 'text-rose-400',
+  'topology': 'text-teal-400',
+  'game-theory': 'text-orange-300',
 };
 
 function LatexRender({ latex }: { latex: string }) {
