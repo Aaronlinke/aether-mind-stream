@@ -32,6 +32,8 @@ const Index = () => {
     { id: "omni", label: "OMNI" },
     { id: "linke", label: "LINKE" },
     { id: "formeln", label: "FORMELN" },
+    { id: "export", label: "EXPORT" },
+    { id: "logmap", label: "LOGISTIK" },
     { id: "latex", label: "LaTeX" },
     { id: "hexgitter", label: "HEX-2D" },
     { id: "3d", label: "HEX-3D" },
