@@ -15,8 +15,10 @@ import { SRILPipeline } from "@/components/SRILPipeline";
 import { AttackSimulator } from "@/components/AttackSimulator";
 import { LaTeXExport } from "@/components/LaTeXExport";
 import { Lattice3D } from "@/components/Lattice3D";
+import { LogisticMapViz } from "@/components/LogisticMapViz";
+import { FormulaExport } from "@/components/FormulaExport";
 
-type Mode = "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d";
+type Mode = "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export";
 
 const Index = () => {
   const [mode, setMode] = useState<Mode>("chronos");
@@ -30,6 +32,8 @@ const Index = () => {
     { id: "omni", label: "OMNI" },
     { id: "linke", label: "LINKE" },
     { id: "formeln", label: "FORMELN" },
+    { id: "export", label: "EXPORT" },
+    { id: "logmap", label: "LOGISTIK" },
     { id: "latex", label: "LaTeX" },
     { id: "hexgitter", label: "HEX-2D" },
     { id: "3d", label: "HEX-3D" },
@@ -69,6 +73,8 @@ const Index = () => {
         {mode === "omni" && <OmniGenesis />}
         {mode === "linke" && <LinkeSystem />}
         {mode === "formeln" && <FormulaLibrary />}
+        {mode === "export" && <FormulaExport />}
+        {mode === "logmap" && <LogisticMapViz />}
         {mode === "latex" && <LaTeXExport />}
         {mode === "hexgitter" && <HexLattice />}
         {mode === "3d" && <Lattice3D />}
