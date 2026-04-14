@@ -1,27 +1,37 @@
-import { useState } from "react";
-import { MathChat } from "@/components/MathChat";
-import { DebateChat } from "@/components/DebateChat";
-import { CryptoTools } from "@/components/CryptoTools";
-import { SHA256Analyzer } from "@/components/SHA256Analyzer";
-import { LatticeAnalyzer } from "@/components/LatticeAnalyzer";
-import { LinkeSystem } from "@/components/LinkeSystem";
-import { OmniGenesis } from "@/components/OmniGenesis";
-import { Nexus } from "@/components/Nexus";
-import { Inversion } from "@/components/Inversion";
-import { Chronos } from "@/components/Chronos";
-import { FormulaLibrary } from "@/components/FormulaLibrary";
-import { HexLattice } from "@/components/HexLattice";
-import { SRILPipeline } from "@/components/SRILPipeline";
-import { AttackSimulator } from "@/components/AttackSimulator";
-import { LaTeXExport } from "@/components/LaTeXExport";
-import { Lattice3D } from "@/components/Lattice3D";
-import { LogisticMapViz } from "@/components/LogisticMapViz";
-import { FormulaExport } from "@/components/FormulaExport";
+import { useState, lazy, Suspense } from "react";
+import { Loader2 } from "lucide-react";
+
+const MathChat = lazy(() => import("@/components/MathChat").then(m => ({ default: m.MathChat })));
+const DebateChat = lazy(() => import("@/components/DebateChat").then(m => ({ default: m.DebateChat })));
+const CryptoTools = lazy(() => import("@/components/CryptoTools").then(m => ({ default: m.CryptoTools })));
+const SHA256Analyzer = lazy(() => import("@/components/SHA256Analyzer").then(m => ({ default: m.SHA256Analyzer })));
+const LatticeAnalyzer = lazy(() => import("@/components/LatticeAnalyzer").then(m => ({ default: m.LatticeAnalyzer })));
+const LinkeSystem = lazy(() => import("@/components/LinkeSystem").then(m => ({ default: m.LinkeSystem })));
+const OmniGenesis = lazy(() => import("@/components/OmniGenesis").then(m => ({ default: m.OmniGenesis })));
+const Nexus = lazy(() => import("@/components/Nexus").then(m => ({ default: m.Nexus })));
+const Inversion = lazy(() => import("@/components/Inversion").then(m => ({ default: m.Inversion })));
+const Chronos = lazy(() => import("@/components/Chronos").then(m => ({ default: m.Chronos })));
+const FormulaLibrary = lazy(() => import("@/components/FormulaLibrary").then(m => ({ default: m.FormulaLibrary })));
+const HexLattice = lazy(() => import("@/components/HexLattice").then(m => ({ default: m.HexLattice })));
+const SRILPipeline = lazy(() => import("@/components/SRILPipeline").then(m => ({ default: m.SRILPipeline })));
+const AttackSimulator = lazy(() => import("@/components/AttackSimulator").then(m => ({ default: m.AttackSimulator })));
+const LaTeXExport = lazy(() => import("@/components/LaTeXExport").then(m => ({ default: m.LaTeXExport })));
+const Lattice3D = lazy(() => import("@/components/Lattice3D").then(m => ({ default: m.Lattice3D })));
+const LogisticMapViz = lazy(() => import("@/components/LogisticMapViz").then(m => ({ default: m.LogisticMapViz })));
+const FormulaExport = lazy(() => import("@/components/FormulaExport").then(m => ({ default: m.FormulaExport })));
 
 type Mode = "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export";
 
+function LoadingFallback() {
+  return (
+    <div className="flex items-center justify-center h-full">
+      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+    </div>
+  );
+}
+
 const Index = () => {
-  const [mode, setMode] = useState<Mode>("chronos");
+  const [mode, setMode] = useState<Mode>("formeln");
 
   const modes: { id: Mode; label: string }[] = [
     { id: "chronos", label: "CHRONOS" },
@@ -46,7 +56,6 @@ const Index = () => {
 
   return (
     <div className="h-screen flex flex-col">
-      {/* Mode Toggle - scrollable */}
       <div className="border-b border-border overflow-x-auto flex">
         {modes.map((m) => (
           <button
@@ -63,26 +72,27 @@ const Index = () => {
         ))}
       </div>
 
-      {/* Content */}
       <div className="flex-1 overflow-hidden">
-        {mode === "chronos" && <Chronos />}
-        {mode === "pipeline" && <SRILPipeline />}
-        {mode === "attack" && <AttackSimulator />}
-        {mode === "inversion" && <Inversion />}
-        {mode === "nexus" && <Nexus />}
-        {mode === "omni" && <OmniGenesis />}
-        {mode === "linke" && <LinkeSystem />}
-        {mode === "formeln" && <FormulaLibrary />}
-        {mode === "export" && <FormulaExport />}
-        {mode === "logmap" && <LogisticMapViz />}
-        {mode === "latex" && <LaTeXExport />}
-        {mode === "hexgitter" && <HexLattice />}
-        {mode === "3d" && <Lattice3D />}
-        {mode === "chat" && <MathChat />}
-        {mode === "debate" && <DebateChat />}
-        {mode === "tools" && <CryptoTools />}
-        {mode === "sha256" && <SHA256Analyzer />}
-        {mode === "lattice" && <LatticeAnalyzer />}
+        <Suspense fallback={<LoadingFallback />}>
+          {mode === "chronos" && <Chronos />}
+          {mode === "pipeline" && <SRILPipeline />}
+          {mode === "attack" && <AttackSimulator />}
+          {mode === "inversion" && <Inversion />}
+          {mode === "nexus" && <Nexus />}
+          {mode === "omni" && <OmniGenesis />}
+          {mode === "linke" && <LinkeSystem />}
+          {mode === "formeln" && <FormulaLibrary />}
+          {mode === "export" && <FormulaExport />}
+          {mode === "logmap" && <LogisticMapViz />}
+          {mode === "latex" && <LaTeXExport />}
+          {mode === "hexgitter" && <HexLattice />}
+          {mode === "3d" && <Lattice3D />}
+          {mode === "chat" && <MathChat />}
+          {mode === "debate" && <DebateChat />}
+          {mode === "tools" && <CryptoTools />}
+          {mode === "sha256" && <SHA256Analyzer />}
+          {mode === "lattice" && <LatticeAnalyzer />}
+        </Suspense>
       </div>
     </div>
   );
