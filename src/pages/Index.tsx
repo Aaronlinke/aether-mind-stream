@@ -90,6 +90,9 @@ const Index = () => {
           {mode === "formeln" && <FormulaLibrary />}
           {mode === "export" && <FormulaExport />}
           {mode === "logmap" && <LogisticMapViz />}
+          {mode === "primes" && <PrimeExplorer />}
+          {mode === "matrix" && <MatrixLab />}
+          {mode === "cipher" && <CipherPlayground />}
           {mode === "latex" && <LaTeXExport />}
           {mode === "hexgitter" && <HexLattice />}
           {mode === "3d" && <Lattice3D />}
