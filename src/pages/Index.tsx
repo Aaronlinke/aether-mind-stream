@@ -19,8 +19,11 @@ const LaTeXExport = lazy(() => import("@/components/LaTeXExport").then(m => ({ d
 const Lattice3D = lazy(() => import("@/components/Lattice3D").then(m => ({ default: m.Lattice3D })));
 const LogisticMapViz = lazy(() => import("@/components/LogisticMapViz").then(m => ({ default: m.LogisticMapViz })));
 const FormulaExport = lazy(() => import("@/components/FormulaExport").then(m => ({ default: m.FormulaExport })));
+const PrimeExplorer = lazy(() => import("@/components/PrimeExplorer").then(m => ({ default: m.PrimeExplorer })));
+const MatrixLab = lazy(() => import("@/components/MatrixLab").then(m => ({ default: m.MatrixLab })));
+const CipherPlayground = lazy(() => import("@/components/CipherPlayground").then(m => ({ default: m.CipherPlayground })));
 
-type Mode = "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export";
+type Mode = "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export" | "primes" | "matrix" | "cipher";
 
 function LoadingFallback() {
   return (
