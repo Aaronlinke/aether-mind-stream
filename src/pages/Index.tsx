@@ -54,6 +54,7 @@ const Index = () => {
     { id: "matrix", label: "MATRIX" },
     { id: "cipher", label: "CHIFFRE" },
     { id: "graph", label: "GRAPH" },
+    { id: "modular", label: "MODULAR" },
     { id: "latex", label: "LaTeX" },
     { id: "hexgitter", label: "HEX-2D" },
     { id: "3d", label: "HEX-3D" },
