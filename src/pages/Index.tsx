@@ -25,8 +25,12 @@ const MatrixLab = lazy(() => import("@/components/MatrixLab").then(m => ({ defau
 const CipherPlayground = lazy(() => import("@/components/CipherPlayground").then(m => ({ default: m.CipherPlayground })));
 const GraphLab = lazy(() => import("@/components/GraphLab").then(m => ({ default: m.GraphLab })));
 const ModularArithmetic = lazy(() => import("@/components/ModularArithmetic").then(m => ({ default: m.ModularArithmetic })));
+const RSADemo = lazy(() => import("@/components/RSADemo").then(m => ({ default: m.RSADemo })));
+const LorenzAttractor = lazy(() => import("@/components/LorenzAttractor").then(m => ({ default: m.LorenzAttractor })));
+const MandelbrotExplorer = lazy(() => import("@/components/MandelbrotExplorer").then(m => ({ default: m.MandelbrotExplorer })));
+const ECCPlotter = lazy(() => import("@/components/ECCPlotter").then(m => ({ default: m.ECCPlotter })));
 
-type Mode = "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export" | "primes" | "matrix" | "cipher" | "graph" | "modular";
+type Mode = "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export" | "primes" | "matrix" | "cipher" | "graph" | "modular" | "rsa" | "lorenz" | "mandel" | "ecc";
 
 function LoadingFallback() {
   return (
@@ -55,6 +59,10 @@ const Index = () => {
     { id: "cipher", label: "CHIFFRE" },
     { id: "graph", label: "GRAPH" },
     { id: "modular", label: "MODULAR" },
+    { id: "rsa", label: "RSA" },
+    { id: "ecc", label: "ECC" },
+    { id: "lorenz", label: "LORENZ" },
+    { id: "mandel", label: "FRAKTAL" },
     { id: "latex", label: "LaTeX" },
     { id: "hexgitter", label: "HEX-2D" },
     { id: "3d", label: "HEX-3D" },
@@ -101,6 +109,10 @@ const Index = () => {
             {mode === "cipher" && <CipherPlayground />}
             {mode === "graph" && <GraphLab />}
             {mode === "modular" && <ModularArithmetic />}
+            {mode === "rsa" && <RSADemo />}
+            {mode === "ecc" && <ECCPlotter />}
+            {mode === "lorenz" && <LorenzAttractor />}
+            {mode === "mandel" && <MandelbrotExplorer />}
             {mode === "latex" && <LaTeXExport />}
             {mode === "hexgitter" && <HexLattice />}
             {mode === "3d" && <Lattice3D />}
