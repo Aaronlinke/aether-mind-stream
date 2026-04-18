@@ -100,6 +100,7 @@ const Index = () => {
             {mode === "matrix" && <MatrixLab />}
             {mode === "cipher" && <CipherPlayground />}
             {mode === "graph" && <GraphLab />}
+            {mode === "modular" && <ModularArithmetic />}
             {mode === "latex" && <LaTeXExport />}
             {mode === "hexgitter" && <HexLattice />}
             {mode === "3d" && <Lattice3D />}
