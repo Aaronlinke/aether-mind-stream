@@ -170,13 +170,13 @@ function AutoRotate({ enabled, children }: { enabled: boolean; children: React.R
 
 export function Lattice3D() {
   const [frequency, setFrequency] = useState(4);
-  const [range, setRange] = useState(5);
+  const [range, setRange] = useState(4);
   const [phase, setPhase] = useState(0);
   const [symmetry, setSymmetry] = useState(6);
-  const [showSurface, setShowSurface] = useState(true);
+  const [showSurface, setShowSurface] = useState(false);
   const [showRosette, setShowRosette] = useState(true);
   const [showPoints, setShowPoints] = useState(true);
-  const [autoRotate, setAutoRotate] = useState(true);
+  const [autoRotate, setAutoRotate] = useState(false);
 
   return (
     <div className="flex flex-col h-full">
