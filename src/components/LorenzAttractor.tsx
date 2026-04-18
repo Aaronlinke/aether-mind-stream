@@ -34,11 +34,7 @@ function Trail({ sigma, rho, beta, dt, count }: { sigma: number; rho: number; be
   });
 
   return (
-    // @ts-expect-error r3f primitive
-    <line ref={ref} geometry={geom}>
-      <lineBasicMaterial color="#ffffff" />
-    {/* @ts-expect-error r3f primitive */}
-    </line>
+    <primitive object={new THREE.Line(geom, new THREE.LineBasicMaterial({ color: 0xffffff }))} ref={ref} />
   );
 }
 
