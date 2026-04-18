@@ -24,8 +24,9 @@ const PrimeExplorer = lazy(() => import("@/components/PrimeExplorer").then(m => 
 const MatrixLab = lazy(() => import("@/components/MatrixLab").then(m => ({ default: m.MatrixLab })));
 const CipherPlayground = lazy(() => import("@/components/CipherPlayground").then(m => ({ default: m.CipherPlayground })));
 const GraphLab = lazy(() => import("@/components/GraphLab").then(m => ({ default: m.GraphLab })));
+const ModularArithmetic = lazy(() => import("@/components/ModularArithmetic").then(m => ({ default: m.ModularArithmetic })));
 
-type Mode = "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export" | "primes" | "matrix" | "cipher" | "graph";
+type Mode = "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export" | "primes" | "matrix" | "cipher" | "graph" | "modular";
 
 function LoadingFallback() {
   return (
