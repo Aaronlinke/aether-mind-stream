@@ -1,5 +1,6 @@
 import { useState, lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const MathChat = lazy(() => import("@/components/MathChat").then(m => ({ default: m.MathChat })));
 const DebateChat = lazy(() => import("@/components/DebateChat").then(m => ({ default: m.DebateChat })));
@@ -22,8 +23,9 @@ const FormulaExport = lazy(() => import("@/components/FormulaExport").then(m => 
 const PrimeExplorer = lazy(() => import("@/components/PrimeExplorer").then(m => ({ default: m.PrimeExplorer })));
 const MatrixLab = lazy(() => import("@/components/MatrixLab").then(m => ({ default: m.MatrixLab })));
 const CipherPlayground = lazy(() => import("@/components/CipherPlayground").then(m => ({ default: m.CipherPlayground })));
+const GraphLab = lazy(() => import("@/components/GraphLab").then(m => ({ default: m.GraphLab })));
 
-type Mode = "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export" | "primes" | "matrix" | "cipher";
+type Mode = "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export" | "primes" | "matrix" | "cipher" | "graph";
 
 function LoadingFallback() {
   return (
@@ -50,6 +52,7 @@ const Index = () => {
     { id: "primes", label: "PRIMZAHL" },
     { id: "matrix", label: "MATRIX" },
     { id: "cipher", label: "CHIFFRE" },
+    { id: "graph", label: "GRAPH" },
     { id: "latex", label: "LaTeX" },
     { id: "hexgitter", label: "HEX-2D" },
     { id: "3d", label: "HEX-3D" },
@@ -79,29 +82,32 @@ const Index = () => {
       </div>
 
       <div className="flex-1 overflow-hidden">
-        <Suspense fallback={<LoadingFallback />}>
-          {mode === "chronos" && <Chronos />}
-          {mode === "pipeline" && <SRILPipeline />}
-          {mode === "attack" && <AttackSimulator />}
-          {mode === "inversion" && <Inversion />}
-          {mode === "nexus" && <Nexus />}
-          {mode === "omni" && <OmniGenesis />}
-          {mode === "linke" && <LinkeSystem />}
-          {mode === "formeln" && <FormulaLibrary />}
-          {mode === "export" && <FormulaExport />}
-          {mode === "logmap" && <LogisticMapViz />}
-          {mode === "primes" && <PrimeExplorer />}
-          {mode === "matrix" && <MatrixLab />}
-          {mode === "cipher" && <CipherPlayground />}
-          {mode === "latex" && <LaTeXExport />}
-          {mode === "hexgitter" && <HexLattice />}
-          {mode === "3d" && <Lattice3D />}
-          {mode === "chat" && <MathChat />}
-          {mode === "debate" && <DebateChat />}
-          {mode === "tools" && <CryptoTools />}
-          {mode === "sha256" && <SHA256Analyzer />}
-          {mode === "lattice" && <LatticeAnalyzer />}
-        </Suspense>
+        <ErrorBoundary key={mode} label={mode}>
+          <Suspense fallback={<LoadingFallback />}>
+            {mode === "chronos" && <Chronos />}
+            {mode === "pipeline" && <SRILPipeline />}
+            {mode === "attack" && <AttackSimulator />}
+            {mode === "inversion" && <Inversion />}
+            {mode === "nexus" && <Nexus />}
+            {mode === "omni" && <OmniGenesis />}
+            {mode === "linke" && <LinkeSystem />}
+            {mode === "formeln" && <FormulaLibrary />}
+            {mode === "export" && <FormulaExport />}
+            {mode === "logmap" && <LogisticMapViz />}
+            {mode === "primes" && <PrimeExplorer />}
+            {mode === "matrix" && <MatrixLab />}
+            {mode === "cipher" && <CipherPlayground />}
+            {mode === "graph" && <GraphLab />}
+            {mode === "latex" && <LaTeXExport />}
+            {mode === "hexgitter" && <HexLattice />}
+            {mode === "3d" && <Lattice3D />}
+            {mode === "chat" && <MathChat />}
+            {mode === "debate" && <DebateChat />}
+            {mode === "tools" && <CryptoTools />}
+            {mode === "sha256" && <SHA256Analyzer />}
+            {mode === "lattice" && <LatticeAnalyzer />}
+          </Suspense>
+        </ErrorBoundary>
       </div>
     </div>
   );
