@@ -189,11 +189,20 @@ export function Lattice3D() {
 
       {/* 3D Canvas */}
       <div className="flex-1 min-h-[300px] bg-background">
-        <Canvas camera={{ position: [8, 6, 8], fov: 50 }}>
-          <ambientLight intensity={0.4} />
-          <pointLight position={[10, 10, 10]} intensity={0.8} />
-          <pointLight position={[-5, 5, -5]} intensity={0.3} />
-          
+        <Canvas
+          camera={{ position: [8, 6, 8], fov: 50 }}
+          dpr={[1, 1.5]}
+          gl={{ antialias: false, powerPreference: "low-power", failIfMajorPerformanceCaveat: false }}
+          onCreated={({ gl }) => {
+            gl.domElement.addEventListener("webglcontextlost", (e) => {
+              e.preventDefault();
+              console.warn("[Lattice3D] WebGL context lost");
+            });
+          }}
+        >
+          <ambientLight intensity={0.5} />
+          <pointLight position={[10, 10, 10]} intensity={0.7} />
+
           <AutoRotate enabled={autoRotate}>
             {showPoints && (
               <LatticePoints range={range} frequency={frequency} phase={phase} showInterference={showSurface} />
@@ -206,7 +215,7 @@ export function Lattice3D() {
             )}
             <BasisVectors />
           </AutoRotate>
-          
+
           <gridHelper args={[20, 20, '#222', '#111']} />
           <OrbitControls enableDamping dampingFactor={0.05} />
         </Canvas>
