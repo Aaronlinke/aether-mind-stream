@@ -29,8 +29,9 @@ const RSADemo = lazy(() => import("@/components/RSADemo").then(m => ({ default: 
 const LorenzAttractor = lazy(() => import("@/components/LorenzAttractor").then(m => ({ default: m.LorenzAttractor })));
 const MandelbrotExplorer = lazy(() => import("@/components/MandelbrotExplorer").then(m => ({ default: m.MandelbrotExplorer })));
 const ECCPlotter = lazy(() => import("@/components/ECCPlotter").then(m => ({ default: m.ECCPlotter })));
+const Organismus = lazy(() => import("@/components/Organismus").then(m => ({ default: m.Organismus })));
 
-type Mode = "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export" | "primes" | "matrix" | "cipher" | "graph" | "modular" | "rsa" | "lorenz" | "mandel" | "ecc";
+type Mode = "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export" | "primes" | "matrix" | "cipher" | "graph" | "modular" | "rsa" | "lorenz" | "mandel" | "ecc" | "organismus";
 
 function LoadingFallback() {
   return (
@@ -44,6 +45,7 @@ const Index = () => {
   const [mode, setMode] = useState<Mode>("formeln");
 
   const modes: { id: Mode; label: string }[] = [
+    { id: "organismus", label: "ORGANISMUS" },
     { id: "chronos", label: "CHRONOS" },
     { id: "pipeline", label: "PIPELINE" },
     { id: "attack", label: "ANGRIFF" },
@@ -94,6 +96,7 @@ const Index = () => {
       <div className="flex-1 overflow-hidden">
         <ErrorBoundary key={mode} label={mode}>
           <Suspense fallback={<LoadingFallback />}>
+            {mode === "organismus" && <Organismus />}
             {mode === "chronos" && <Chronos />}
             {mode === "pipeline" && <SRILPipeline />}
             {mode === "attack" && <AttackSimulator />}
