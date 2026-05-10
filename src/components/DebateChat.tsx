@@ -179,15 +179,15 @@ export function DebateChat() {
         ))}
 
         {/* Streaming message */}
-        {isRunning && streamingContent && (
+        {isRunning && (
           <div className="space-y-1">
             <div className={`text-xs font-medium ${currentAgent === "alpha" ? "text-foreground" : "text-muted-foreground"}`}>
               {currentAgent === "alpha" ? "ALPHA" : "BETA"}
               <Loader2 className="inline-block w-3 h-3 ml-2 animate-spin" />
             </div>
-            <div className="text-sm whitespace-pre-wrap pl-4 border-l border-border">
-              {streamingContent}
-              <span className="inline-block w-2 h-4 bg-foreground ml-1 animate-pulse" />
+            <div className="text-sm whitespace-pre-wrap pl-4 border-l border-border min-h-[1.25rem]">
+              {streamingContent || <span className="text-muted-foreground italic">denkt nach…</span>}
+              {streamingContent && <span className="inline-block w-2 h-4 bg-foreground ml-1 animate-pulse" />}
             </div>
           </div>
         )}

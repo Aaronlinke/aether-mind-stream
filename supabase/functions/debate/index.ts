@@ -33,7 +33,6 @@ serve(async (req) => {
     }
 
     const systemPrompt = agent === "alpha" ? AGENT_A_PROMPT : AGENT_B_PROMPT;
-    const agentName = agent === "alpha" ? "ALPHA" : "BETA";
     const otherAgent = agent === "alpha" ? "BETA" : "ALPHA";
 
     // Build conversation context
