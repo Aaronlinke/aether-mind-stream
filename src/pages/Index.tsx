@@ -66,6 +66,7 @@ const Index = () => {
     { id: "modular", label: "MODULAR" },
     { id: "rsa", label: "RSA" },
     { id: "ecc", label: "ECC" },
+    { id: "fp", label: "FINGERPRINT" },
     { id: "lorenz", label: "LORENZ" },
     { id: "mandel", label: "FRAKTAL" },
     { id: "latex", label: "LaTeX" },
