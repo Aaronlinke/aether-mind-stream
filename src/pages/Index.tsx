@@ -59,6 +59,7 @@ const Index = () => {
     { id: "logmap", label: "LOGISTIK" },
     { id: "primes", label: "PRIMZAHL" },
     { id: "matrix", label: "MATRIX" },
+    { id: "expm", label: "EXPM" },
     { id: "cipher", label: "CHIFFRE" },
     { id: "graph", label: "GRAPH" },
     { id: "modular", label: "MODULAR" },
