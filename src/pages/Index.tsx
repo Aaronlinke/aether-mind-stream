@@ -99,6 +99,7 @@ const Index = () => {
         <ErrorBoundary key={mode} label={mode}>
           <Suspense fallback={<LoadingFallback />}>
             {mode === "organismus" && <Organismus />}
+            {mode === "expm" && <MatrixExp />}
             {mode === "chronos" && <Chronos />}
             {mode === "pipeline" && <SRILPipeline />}
             {mode === "attack" && <AttackSimulator />}
