@@ -30,8 +30,9 @@ const LorenzAttractor = lazy(() => import("@/components/LorenzAttractor").then(m
 const MandelbrotExplorer = lazy(() => import("@/components/MandelbrotExplorer").then(m => ({ default: m.MandelbrotExplorer })));
 const ECCPlotter = lazy(() => import("@/components/ECCPlotter").then(m => ({ default: m.ECCPlotter })));
 const Organismus = lazy(() => import("@/components/Organismus").then(m => ({ default: m.Organismus })));
+const MatrixExp = lazy(() => import("@/components/MatrixExp").then(m => ({ default: m.MatrixExp })));
 
-type Mode = "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export" | "primes" | "matrix" | "cipher" | "graph" | "modular" | "rsa" | "lorenz" | "mandel" | "ecc" | "organismus";
+type Mode = "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export" | "primes" | "matrix" | "cipher" | "graph" | "modular" | "rsa" | "lorenz" | "mandel" | "ecc" | "organismus" | "expm";
 
 function LoadingFallback() {
   return (
