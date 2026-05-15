@@ -31,8 +31,9 @@ const MandelbrotExplorer = lazy(() => import("@/components/MandelbrotExplorer").
 const ECCPlotter = lazy(() => import("@/components/ECCPlotter").then(m => ({ default: m.ECCPlotter })));
 const Organismus = lazy(() => import("@/components/Organismus").then(m => ({ default: m.Organismus })));
 const MatrixExp = lazy(() => import("@/components/MatrixExp").then(m => ({ default: m.MatrixExp })));
+const ECCFingerprint = lazy(() => import("@/components/ECCFingerprint").then(m => ({ default: m.ECCFingerprint })));
 
-type Mode = "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export" | "primes" | "matrix" | "cipher" | "graph" | "modular" | "rsa" | "lorenz" | "mandel" | "ecc" | "organismus" | "expm";
+type Mode = "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export" | "primes" | "matrix" | "cipher" | "graph" | "modular" | "rsa" | "lorenz" | "mandel" | "ecc" | "organismus" | "expm" | "fp";
 
 function LoadingFallback() {
   return (
@@ -65,6 +66,7 @@ const Index = () => {
     { id: "modular", label: "MODULAR" },
     { id: "rsa", label: "RSA" },
     { id: "ecc", label: "ECC" },
+    { id: "fp", label: "FINGERPRINT" },
     { id: "lorenz", label: "LORENZ" },
     { id: "mandel", label: "FRAKTAL" },
     { id: "latex", label: "LaTeX" },
@@ -100,6 +102,7 @@ const Index = () => {
           <Suspense fallback={<LoadingFallback />}>
             {mode === "organismus" && <Organismus />}
             {mode === "expm" && <MatrixExp />}
+            {mode === "fp" && <ECCFingerprint />}
             {mode === "chronos" && <Chronos />}
             {mode === "pipeline" && <SRILPipeline />}
             {mode === "attack" && <AttackSimulator />}
