@@ -102,6 +102,7 @@ const Index = () => {
           <Suspense fallback={<LoadingFallback />}>
             {mode === "organismus" && <Organismus />}
             {mode === "expm" && <MatrixExp />}
+            {mode === "fp" && <ECCFingerprint />}
             {mode === "chronos" && <Chronos />}
             {mode === "pipeline" && <SRILPipeline />}
             {mode === "attack" && <AttackSimulator />}
