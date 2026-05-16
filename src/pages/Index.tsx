@@ -34,7 +34,7 @@ const MatrixExp = lazy(() => import("@/components/MatrixExp").then(m => ({ defau
 const ECCFingerprint = lazy(() => import("@/components/ECCFingerprint").then(m => ({ default: m.ECCFingerprint })));
 const Zeitmaschine = lazy(() => import("@/components/Zeitmaschine").then(m => ({ default: m.Zeitmaschine })));
 
-type Mode = "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export" | "primes" | "matrix" | "cipher" | "graph" | "modular" | "rsa" | "lorenz" | "mandel" | "ecc" | "organismus" | "expm" | "fp";
+type Mode = "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export" | "primes" | "matrix" | "cipher" | "graph" | "modular" | "rsa" | "lorenz" | "mandel" | "ecc" | "organismus" | "expm" | "fp" | "zeit";
 
 function LoadingFallback() {
   return (
