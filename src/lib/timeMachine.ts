@@ -3,7 +3,7 @@
  * Mathematische Utilities für inverse Berechnungen
  */
 
-import * as math from 'mathjs';
+// mathjs entfernt — alle verwendeten Funktionen sind native JS
 
 // Physikalische Konstanten
 export const CONSTANTS = {
