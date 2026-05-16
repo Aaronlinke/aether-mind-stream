@@ -105,6 +105,7 @@ const Index = () => {
             {mode === "organismus" && <Organismus />}
             {mode === "expm" && <MatrixExp />}
             {mode === "fp" && <ECCFingerprint />}
+            {mode === "zeit" && <Zeitmaschine />}
             {mode === "chronos" && <Chronos />}
             {mode === "pipeline" && <SRILPipeline />}
             {mode === "attack" && <AttackSimulator />}
