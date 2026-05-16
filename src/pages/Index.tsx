@@ -68,6 +68,7 @@ const Index = () => {
     { id: "rsa", label: "RSA" },
     { id: "ecc", label: "ECC" },
     { id: "fp", label: "FINGERPRINT" },
+    { id: "zeit", label: "ZEITMASCHINE" },
     { id: "lorenz", label: "LORENZ" },
     { id: "mandel", label: "FRAKTAL" },
     { id: "latex", label: "LaTeX" },
