@@ -11,7 +11,14 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json();
+    const { messages, model } = await req.json();
+    const ALLOWED = new Set([
+      "google/gemini-2.5-flash","google/gemini-2.5-flash-lite","google/gemini-2.5-pro",
+      "google/gemini-3-flash-preview","google/gemini-3.5-flash","google/gemini-3.1-pro-preview",
+      "openai/gpt-5-nano","openai/gpt-5-mini","openai/gpt-5",
+      "openai/gpt-5.4","openai/gpt-5.4-pro","openai/gpt-5.5","openai/gpt-5.5-pro",
+    ]);
+    const selectedModel = typeof model === "string" && ALLOWED.has(model) ? model : "google/gemini-2.5-flash";
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
