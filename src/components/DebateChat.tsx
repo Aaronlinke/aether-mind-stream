@@ -3,6 +3,7 @@ import { Play, Square, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { AI_MODELS, DEFAULT_MODEL } from "@/lib/aiModels";
 
 type DebateMessage = {
   agent: "alpha" | "beta";
@@ -17,9 +18,12 @@ export function DebateChat() {
   const [isRunning, setIsRunning] = useState(false);
   const [currentAgent, setCurrentAgent] = useState<"alpha" | "beta">("alpha");
   const [streamingContent, setStreamingContent] = useState("");
+  const [model, setModel] = useState<string>(() => localStorage.getItem("ai-model") || DEFAULT_MODEL);
   const abortRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  useEffect(() => { localStorage.setItem("ai-model", model); }, [model]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -34,7 +38,7 @@ export function DebateChat() {
         "Content-Type": "application/json",
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ topic: topicText, history, agent }),
+      body: JSON.stringify({ topic: topicText, history, agent, model }),
       signal: abortRef.current.signal,
     });
 
@@ -83,7 +87,7 @@ export function DebateChat() {
     }
 
     return fullContent;
-  }, []);
+  }, [model]);
 
   const runDebate = useCallback(async () => {
     if (!topic.trim()) return;
@@ -145,11 +149,28 @@ export function DebateChat() {
   return (
     <div className="flex flex-col h-screen max-w-4xl mx-auto">
       {/* Header */}
-      <header className="border-b border-border p-4">
-        <h1 className="text-lg font-medium">ALPHA vs BETA</h1>
-        <p className="text-xs text-muted-foreground mt-1">
-          Zwei KIs debattieren • Start drücken • Stop für Ergebnis
-        </p>
+      <header className="border-b border-border p-4 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-lg font-medium">ALPHA vs BETA</h1>
+          <p className="text-xs text-muted-foreground mt-1">
+            Zwei KIs debattieren • Start drücken • Stop für Ergebnis
+          </p>
+        </div>
+        <select
+          value={model}
+          onChange={(e) => setModel(e.target.value)}
+          disabled={isRunning}
+          className="text-xs bg-input border border-border rounded px-2 py-1 text-foreground"
+          title="KI-Modell"
+        >
+          {Object.entries(AI_MODELS.reduce((acc, m) => {
+            (acc[m.provider] ||= []).push(m); return acc;
+          }, {} as Record<string, typeof AI_MODELS>)).map(([prov, list]) => (
+            <optgroup key={prov} label={prov}>
+              {list.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+            </optgroup>
+          ))}
+        </select>
       </header>
 
       {/* Messages */}

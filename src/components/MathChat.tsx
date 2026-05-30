@@ -3,6 +3,7 @@ import { Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { AI_MODELS, DEFAULT_MODEL } from "@/lib/aiModels";
 
 type Message = {
   role: "user" | "assistant";
@@ -15,8 +16,11 @@ export function MathChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [model, setModel] = useState<string>(() => localStorage.getItem("ai-model") || DEFAULT_MODEL);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  useEffect(() => { localStorage.setItem("ai-model", model); }, [model]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -39,7 +43,7 @@ export function MathChat() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: [...messages, userMsg] }),
+        body: JSON.stringify({ messages: [...messages, userMsg], model }),
       });
 
       if (!resp.ok) {
@@ -140,11 +144,28 @@ export function MathChat() {
   return (
     <div className="flex flex-col h-screen max-w-4xl mx-auto">
       {/* Header */}
-      <header className="border-b border-border p-4">
-        <h1 className="text-lg font-medium">MATH / CRYPTO</h1>
-        <p className="text-xs text-muted-foreground mt-1">
-          Mathematik • Kryptografie • Base58 • Hashes • Algorithmen
-        </p>
+      <header className="border-b border-border p-4 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-lg font-medium">MATH / CRYPTO</h1>
+          <p className="text-xs text-muted-foreground mt-1">
+            Mathematik • Kryptografie • Base58 • Hashes • Algorithmen
+          </p>
+        </div>
+        <select
+          value={model}
+          onChange={(e) => setModel(e.target.value)}
+          disabled={isLoading}
+          className="text-xs bg-input border border-border rounded px-2 py-1 text-foreground"
+          title="KI-Modell"
+        >
+          {Object.entries(AI_MODELS.reduce((acc, m) => {
+            (acc[m.provider] ||= []).push(m); return acc;
+          }, {} as Record<string, typeof AI_MODELS>)).map(([prov, list]) => (
+            <optgroup key={prov} label={prov}>
+              {list.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+            </optgroup>
+          ))}
+        </select>
       </header>
 
       {/* Messages */}
