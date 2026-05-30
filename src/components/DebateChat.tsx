@@ -87,7 +87,7 @@ export function DebateChat() {
     }
 
     return fullContent;
-  }, []);
+  }, [model]);
 
   const runDebate = useCallback(async () => {
     if (!topic.trim()) return;
