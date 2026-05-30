@@ -132,6 +132,7 @@ const Index = () => {
             {mode === "3d" && <Lattice3D />}
             {mode === "chat" && <MathChat />}
             {mode === "debate" && <DebateChat />}
+            {mode === "quad" && <QuadDebate />}
             {mode === "tools" && <CryptoTools />}
             {mode === "sha256" && <SHA256Analyzer />}
             {mode === "lattice" && <LatticeAnalyzer />}
