@@ -18,9 +18,12 @@ export function DebateChat() {
   const [isRunning, setIsRunning] = useState(false);
   const [currentAgent, setCurrentAgent] = useState<"alpha" | "beta">("alpha");
   const [streamingContent, setStreamingContent] = useState("");
+  const [model, setModel] = useState<string>(() => localStorage.getItem("ai-model") || DEFAULT_MODEL);
   const abortRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  useEffect(() => { localStorage.setItem("ai-model", model); }, [model]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
