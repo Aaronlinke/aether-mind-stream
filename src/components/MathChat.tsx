@@ -144,11 +144,28 @@ export function MathChat() {
   return (
     <div className="flex flex-col h-screen max-w-4xl mx-auto">
       {/* Header */}
-      <header className="border-b border-border p-4">
-        <h1 className="text-lg font-medium">MATH / CRYPTO</h1>
-        <p className="text-xs text-muted-foreground mt-1">
-          Mathematik • Kryptografie • Base58 • Hashes • Algorithmen
-        </p>
+      <header className="border-b border-border p-4 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-lg font-medium">MATH / CRYPTO</h1>
+          <p className="text-xs text-muted-foreground mt-1">
+            Mathematik • Kryptografie • Base58 • Hashes • Algorithmen
+          </p>
+        </div>
+        <select
+          value={model}
+          onChange={(e) => setModel(e.target.value)}
+          disabled={isLoading}
+          className="text-xs bg-input border border-border rounded px-2 py-1 text-foreground"
+          title="KI-Modell"
+        >
+          {Object.entries(AI_MODELS.reduce((acc, m) => {
+            (acc[m.provider] ||= []).push(m); return acc;
+          }, {} as Record<string, typeof AI_MODELS>)).map(([prov, list]) => (
+            <optgroup key={prov} label={prov}>
+              {list.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+            </optgroup>
+          ))}
+        </select>
       </header>
 
       {/* Messages */}
