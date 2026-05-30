@@ -80,6 +80,7 @@ const Index = () => {
     { id: "tools", label: "TOOLS" },
     { id: "chat", label: "CHAT" },
     { id: "debate", label: "DEBATTE" },
+    { id: "quad", label: "QUAD-KI" },
   ];
 
   return (
