@@ -46,7 +46,7 @@ Formatiere mathematische Formeln klar und nutze Codeblöcke für Code.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: selectedModel,
         messages: [
           { role: "system", content: systemPrompt },
           ...messages,
