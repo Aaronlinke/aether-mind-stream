@@ -3,6 +3,7 @@ import { Play, Square, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { AI_MODELS, DEFAULT_MODEL } from "@/lib/aiModels";
 
 type DebateMessage = {
   agent: "alpha" | "beta";
