@@ -38,7 +38,7 @@ export function DebateChat() {
         "Content-Type": "application/json",
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ topic: topicText, history, agent }),
+      body: JSON.stringify({ topic: topicText, history, agent, model }),
       signal: abortRef.current.signal,
     });
 
