@@ -3,7 +3,8 @@ import { Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { AI_MODELS, DEFAULT_MODEL } from "@/lib/aiModels";
+import { AI_MODELS, DEFAULT_MODEL, loadCustomKeys, modelRequiresKey, type CustomKeys } from "@/lib/aiModels";
+import { ApiKeyManager } from "@/components/ApiKeyManager";
 
 type Message = {
   role: "user" | "assistant";
