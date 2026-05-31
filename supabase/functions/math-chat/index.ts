@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { resolveRoute, streamChat, type CustomKeys } from "../_shared/aiRoute.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,73 +7,54 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, model } = await req.json();
-    const ALLOWED = new Set([
-      "google/gemini-2.5-flash","google/gemini-2.5-flash-lite","google/gemini-2.5-pro",
-      "google/gemini-3-flash-preview","google/gemini-3.5-flash","google/gemini-3.1-pro-preview",
-      "openai/gpt-5-nano","openai/gpt-5-mini","openai/gpt-5",
-      "openai/gpt-5.4","openai/gpt-5.4-pro","openai/gpt-5.5","openai/gpt-5.5-pro",
+    const { messages, model, customKeys, strictMode } = await req.json() as {
+      messages: Array<{ role: string; content: string }>;
+      model: string; customKeys?: CustomKeys; strictMode?: boolean;
+    };
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") || "";
+
+    const systemPrompt = `Du bist ein mathematisches und kryptografisches Genie.
+Beherrschst: Algebra, Analysis, Zahlentheorie, Modulo, GCD, Primzahlen, Kombinatorik, Statistik,
+SHA-256/512, MD5, HMAC, AES, RSA, ECC (secp256k1, Ed25519, X25519), KDFs (PBKDF2, scrypt, Argon2),
+Base58/64/Hex, digitale Signaturen, Komplexitätstheorie.
+
+REGELN:
+- Ausschließlich mathematisch/wissenschaftlich exakte Antworten.
+- Keine Mythologie, keine Esoterik, keine Science-Fiction-Begriffe, keine Marketing-Floskeln.
+- Schritt-für-Schritt-Berechnungen, präzise Notation, SI-Einheiten.
+- Code in lauffähigem TypeScript/JavaScript, Python oder Swift mit Erklärung der Komplexität.
+- Unbewiesene/unsichere Aussagen mit [unverifiziert] markieren.
+${strictMode ? "- STRIKT: Jede nicht-triviale Behauptung mit Quelle (Autor/Jahr/Paper/Lehrbuch) belegen." : ""}`;
+
+    const target = resolveRoute(model, customKeys, LOVABLE_API_KEY);
+    const response = await streamChat(target, [
+      { role: "system", content: systemPrompt },
+      ...messages,
     ]);
-    const selectedModel = typeof model === "string" && ALLOWED.has(model) ? model : "google/gemini-2.5-flash";
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
-
-    const systemPrompt = `Du bist ein mathematisches und kryptografisches Genie. 
-Du beherrschst:
-- Alle mathematischen Operationen (Algebra, Analysis, Zahlentheorie, Modulo, GCD, Primzahlen, etc.)
-- Kryptografische Algorithmen (SHA-256, SHA-512, MD5, HMAC, AES, RSA, etc.)
-- Base58, Base64, Hex Encoding/Decoding
-- Elliptische Kurven Kryptografie (secp256k1, Ed25519)
-- Hash-Funktionen und deren Eigenschaften
-- Digitale Signaturen
-- Key Derivation Functions (PBKDF2, bcrypt, scrypt, Argon2)
-
-Antworte präzise und direkt. Zeige Berechnungen Schritt für Schritt wenn nötig.
-Wenn der User Code will, liefere funktionierenden Code (JavaScript/TypeScript, Python, Swift).
-Formatiere mathematische Formeln klar und nutze Codeblöcke für Code.`;
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: selectedModel,
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...messages,
-        ],
-        stream: true,
-      }),
-    });
 
     if (!response.ok) {
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit erreicht. Bitte warte kurz." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (response.status === 402) {
         return new Response(JSON.stringify({ error: "Credits aufgebraucht." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (response.status === 401) {
+        return new Response(JSON.stringify({ error: "API-Key ungültig (401)." }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
-      return new Response(JSON.stringify({ error: "AI Fehler" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(JSON.stringify({ error: `AI Fehler ${response.status}` }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -82,8 +64,7 @@ Formatiere mathematische Formeln klar und nutze Codeblöcke für Code.`;
   } catch (error) {
     console.error("Chat error:", error);
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unbekannter Fehler" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
