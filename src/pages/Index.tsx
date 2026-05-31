@@ -50,6 +50,7 @@ const Index = () => {
   const [mode, setMode] = useState<Mode>("formeln");
 
   const modes: { id: Mode; label: string }[] = [
+    { id: "orakel", label: "ORAKEL" },
     { id: "organismus", label: "ORGANISMUS" },
     { id: "chronos", label: "CHRONOS" },
     { id: "pipeline", label: "PIPELINE" },
