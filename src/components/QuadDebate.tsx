@@ -3,7 +3,8 @@ import { Play, Square, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { AI_MODELS, DEFAULT_MODEL } from "@/lib/aiModels";
+import { AI_MODELS, DEFAULT_MODEL, loadCustomKeys, modelRequiresKey, type CustomKeys } from "@/lib/aiModels";
+import { ApiKeyManager } from "@/components/ApiKeyManager";
 
 type AgentId = "alpha" | "beta" | "gamma" | "delta";
 type DebateMessage = { agent: AgentId; content: string };
@@ -29,14 +30,17 @@ export function QuadDebate() {
     if (saved) try { return JSON.parse(saved); } catch { /* noop */ }
     return { alpha: DEFAULT_MODEL, beta: DEFAULT_MODEL, gamma: DEFAULT_MODEL, delta: DEFAULT_MODEL };
   });
+  const [customKeys, setCustomKeys] = useState<CustomKeys>(() => loadCustomKeys());
+  const [strictMode, setStrictMode] = useState<boolean>(() => localStorage.getItem("quad-strict") === "1");
   const abortRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   useEffect(() => { localStorage.setItem("quad-models", JSON.stringify(models)); }, [models]);
+  useEffect(() => { localStorage.setItem("quad-strict", strictMode ? "1" : "0"); }, [strictMode]);
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, streamingContent]);
 
-  const streamOne = useCallback(async (agent: AgentId, history: DebateMessage[], topicText: string, model: string): Promise<string> => {
+  const streamOne = useCallback(async (agent: AgentId | "research", history: DebateMessage[], topicText: string, model: string): Promise<string> => {
     abortRef.current = new AbortController();
     const resp = await fetch(DEBATE_URL, {
       method: "POST",
@@ -44,7 +48,7 @@ export function QuadDebate() {
         "Content-Type": "application/json",
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ topic: topicText, history, agent, model }),
+      body: JSON.stringify({ topic: topicText, history, agent, model, customKeys, strictMode }),
       signal: abortRef.current.signal,
     });
     if (!resp.ok) {
@@ -82,16 +86,27 @@ export function QuadDebate() {
       }
     }
     return full;
-  }, []);
+  }, [customKeys, strictMode]);
 
   const runDebate = useCallback(async () => {
     if (!topic.trim()) return;
+
+    // Validate keys for all selected models
+    const order: AgentId[] = ["alpha", "beta", "gamma", "delta"];
+    for (const a of order) {
+      const chk = modelRequiresKey(models[a], customKeys);
+      if (!chk.ok) {
+        toast({ variant: "destructive", title: `${chk.missing?.toUpperCase()} API-Key fehlt`,
+          description: `Für ${a.toUpperCase()} (${models[a]}). Im Keys-Dialog hinterlegen.` });
+        return;
+      }
+    }
+
     setIsRunning(true);
     setMessages([]);
     setStreamingContent("");
 
     let history: DebateMessage[] = [];
-    const order: AgentId[] = ["alpha", "beta", "gamma", "delta"];
 
     try {
       for (let r = 0; r < rounds; r++) {
@@ -118,7 +133,7 @@ export function QuadDebate() {
       setIsRunning(false);
       setStreamingContent("");
     }
-  }, [topic, rounds, models, streamOne, toast]);
+  }, [topic, rounds, models, customKeys, streamOne, toast]);
 
   const stopDebate = useCallback(() => {
     abortRef.current?.abort();
@@ -158,18 +173,22 @@ export function QuadDebate() {
             </div>
           ))}
         </div>
-        <div className="flex items-center gap-2 mt-3 text-xs">
-          <label className="text-muted-foreground">Runden:</label>
-          <input
-            type="number"
-            min={1}
-            max={10}
-            value={rounds}
-            onChange={(e) => setRounds(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
-            disabled={isRunning}
-            className="w-16 bg-input border border-border rounded px-2 py-0.5 text-foreground"
-          />
-          <span className="text-muted-foreground">× 4 Beiträge</span>
+        <div className="flex items-center gap-3 mt-3 text-xs flex-wrap">
+          <label className="text-muted-foreground flex items-center gap-1">
+            Runden:
+            <input
+              type="number" min={1} max={10} value={rounds}
+              onChange={(e) => setRounds(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
+              disabled={isRunning}
+              className="w-16 bg-input border border-border rounded px-2 py-0.5 text-foreground"
+            />
+            <span>× 4</span>
+          </label>
+          <label className="flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" checked={strictMode} onChange={(e) => setStrictMode(e.target.checked)} disabled={isRunning} />
+            <span className="text-muted-foreground">STRIKT (peer-review-Modus)</span>
+          </label>
+          <ApiKeyManager onChange={setCustomKeys} />
         </div>
       </header>
 

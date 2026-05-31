@@ -3,7 +3,8 @@ import { Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { AI_MODELS, DEFAULT_MODEL } from "@/lib/aiModels";
+import { AI_MODELS, DEFAULT_MODEL, loadCustomKeys, modelRequiresKey, type CustomKeys } from "@/lib/aiModels";
+import { ApiKeyManager } from "@/components/ApiKeyManager";
 
 type Message = {
   role: "user" | "assistant";
@@ -17,10 +18,13 @@ export function MathChat() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [model, setModel] = useState<string>(() => localStorage.getItem("ai-model") || DEFAULT_MODEL);
+  const [customKeys, setCustomKeys] = useState<CustomKeys>(() => loadCustomKeys());
+  const [strictMode, setStrictMode] = useState<boolean>(() => localStorage.getItem("strict-mode") === "1");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   useEffect(() => { localStorage.setItem("ai-model", model); }, [model]);
+  useEffect(() => { localStorage.setItem("strict-mode", strictMode ? "1" : "0"); }, [strictMode]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -28,6 +32,13 @@ export function MathChat() {
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
+
+    const keyCheck = modelRequiresKey(model, customKeys);
+    if (!keyCheck.ok) {
+      toast({ variant: "destructive", title: `${keyCheck.missing?.toUpperCase()} API-Key fehlt`,
+        description: "Im Keys-Dialog hinterlegen oder ein Lovable-Modell wählen." });
+      return;
+    }
 
     const userMsg: Message = { role: "user", content: input.trim() };
     setMessages((prev) => [...prev, userMsg]);
@@ -43,7 +54,7 @@ export function MathChat() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: [...messages, userMsg], model }),
+        body: JSON.stringify({ messages: [...messages, userMsg], model, customKeys, strictMode }),
       });
 
       if (!resp.ok) {
@@ -144,28 +155,35 @@ export function MathChat() {
   return (
     <div className="flex flex-col h-screen max-w-4xl mx-auto">
       {/* Header */}
-      <header className="border-b border-border p-4 flex items-start justify-between gap-3">
+      <header className="border-b border-border p-4 flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-lg font-medium">MATH / CRYPTO</h1>
           <p className="text-xs text-muted-foreground mt-1">
-            Mathematik • Kryptografie • Base58 • Hashes • Algorithmen
+            Mathematik • Kryptografie • exakt, ohne Mythos
           </p>
         </div>
-        <select
-          value={model}
-          onChange={(e) => setModel(e.target.value)}
-          disabled={isLoading}
-          className="text-xs bg-input border border-border rounded px-2 py-1 text-foreground"
-          title="KI-Modell"
-        >
-          {Object.entries(AI_MODELS.reduce((acc, m) => {
-            (acc[m.provider] ||= []).push(m); return acc;
-          }, {} as Record<string, typeof AI_MODELS>)).map(([prov, list]) => (
-            <optgroup key={prov} label={prov}>
-              {list.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
-            </optgroup>
-          ))}
-        </select>
+        <div className="flex items-center gap-2 flex-wrap">
+          <label className="text-[10px] text-muted-foreground flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" checked={strictMode} onChange={(e) => setStrictMode(e.target.checked)} disabled={isLoading} />
+            STRIKT
+          </label>
+          <ApiKeyManager onChange={setCustomKeys} />
+          <select
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            disabled={isLoading}
+            className="text-xs bg-input border border-border rounded px-2 py-1 text-foreground max-w-[200px]"
+            title="KI-Modell"
+          >
+            {Object.entries(AI_MODELS.reduce((acc, m) => {
+              (acc[m.provider] ||= []).push(m); return acc;
+            }, {} as Record<string, typeof AI_MODELS>)).map(([prov, list]) => (
+              <optgroup key={prov} label={prov}>
+                {list.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+              </optgroup>
+            ))}
+          </select>
+        </div>
       </header>
 
       {/* Messages */}

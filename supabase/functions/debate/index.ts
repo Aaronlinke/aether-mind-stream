@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { resolveRoute, streamChat, type CustomKeys } from "../_shared/aiRoute.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,69 +7,69 @@ const corsHeaders = {
 };
 
 const PERSONAS: Record<string, string> = {
-  alpha: `Du bist ALPHA – analytisch, präzise, mathematisch streng.
-Du hinterfragst Annahmen, forderst Beweise und arbeitest strukturiert.
-Direkt, sachlich, ohne Floskeln. Beziehe dich auf vorherige Beiträge und baue darauf auf oder widerlege sie.
-Max 150 Wörter.`,
-  beta: `Du bist BETA – kreativ, lateral, querdenkend.
-Du findest unkonventionelle Lösungen und siehst übersehene Zusammenhänge. Bringst praktische Beispiele.
-Prägnant, tiefgründig, ohne Floskeln. Beziehe dich auf vorherige Beiträge und erweitere die Perspektive.
-Max 150 Wörter.`,
-  gamma: `Du bist GAMMA – Korrektiv und Skeptiker.
-Du prüfst die bisherigen Beiträge auf logische Fehler, falsche Prämissen und Denkfehler.
-Du markierst klar: was ist korrekt, was ist fragwürdig, was ist falsch. Begründe knapp.
-Max 150 Wörter.`,
-  delta: `Du bist DELTA – Synthesizer und Architekt.
-Du nimmst die Beiträge von ALPHA, BETA und GAMMA und destillierst sie zu einer konkreten, umsetzbaren Position.
-Du benennst Konsens, offene Punkte und nächste Schritte.
-Max 150 Wörter.`,
+  alpha: `Du bist ALPHA – analytisch, mathematisch streng, formal.
+Regeln:
+- Ausschließlich naturwissenschaftlich/mathematisch korrekt argumentieren.
+- Keine Mythologie, keine Esoterik, keine Science-Fiction-Begriffe, keine Metaphern.
+- Definitionen, Sätze, Beweise, Formeln, ggf. Komplexitätsangaben.
+- Quellen wo möglich (Autor/Jahr, Lehrbuch, Paper).
+- Unbewiesene Behauptungen explizit als "[unbewiesen]" oder "[Annahme]" markieren.
+Beziehe dich auf vorherige Beiträge und baue auf bzw. widerlege sie. Max 180 Wörter.`,
+  beta: `Du bist BETA – mathematisch kreativ, sucht alternative formale Ansätze.
+Regeln:
+- Ausschließlich Mathematik/Informatik/Physik/Statistik. Keine Mythologie, keine Sci-Fi, keine Buzzwords.
+- Bringe konkrete alternative Beweisstrategien, Reduktionen, Gegenbeispiele, numerische Experimente.
+- Notation präzise. Annahmen offenlegen.
+Beziehe dich auf vorherige Beiträge. Max 180 Wörter.`,
+  gamma: `Du bist GAMMA – Korrektiv, peer-review-streng.
+Regeln:
+- Prüfe ALPHA und BETA punktweise auf: logische Fehler, falsche Definitionen, ungültige Schlüsse, fehlende Annahmen, Zirkelschluss, falsche Komplexität, fehlerhafte Notation.
+- Markiere jeden Punkt: [korrekt] / [fragwürdig: ...] / [falsch: ...] mit kurzer Begründung.
+- Keine Mythologie, keine Sci-Fi, keine vagen Begriffe.
+Max 180 Wörter.`,
+  delta: `Du bist DELTA – Synthese und formale Architektur.
+Regeln:
+- Destilliere ALPHA, BETA, GAMMA zu einer präzisen, prüfbaren Aussage / Theorem / Algorithmus.
+- Liste: (1) Konsens, (2) bewiesene Teilaussagen, (3) offene Fragen, (4) nächste konkrete Schritte (Lemma, Experiment, Komplexitätsbeweis).
+- Ausschließlich wissenschaftliche Sprache. Keine Metaphern, keine Mythologie.
+Max 180 Wörter.`,
+  research: `Du bist RECHERCHE – wissenschaftlicher Faktengeber.
+Regeln:
+- Liefere nur belegte Fakten, Definitionen, Sätze, bekannte Ergebnisse aus Mathematik, Kryptografie, Informatik, Physik, Statistik.
+- Format: Stichpunktliste mit Quelle (Autor/Jahr/Paper/Lehrbuch). Bei unsicher: [unverifiziert] markieren.
+- Keine Spekulation, keine Mythologie, keine Sci-Fi.
+Max 220 Wörter.`,
 };
 
-const ALLOWED = new Set([
-  "google/gemini-2.5-flash","google/gemini-2.5-flash-lite","google/gemini-2.5-pro",
-  "google/gemini-3-flash-preview","google/gemini-3.5-flash","google/gemini-3.1-pro-preview",
-  "openai/gpt-5-nano","openai/gpt-5-mini","openai/gpt-5",
-  "openai/gpt-5.4","openai/gpt-5.4-pro","openai/gpt-5.5","openai/gpt-5.5-pro",
-]);
-
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { topic, history, agent, model } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const { topic, history, agent, model, customKeys, strictMode } = await req.json() as {
+      topic: string; history: Array<{ agent: string; content: string }>;
+      agent: string; model: string; customKeys?: CustomKeys; strictMode?: boolean;
+    };
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") || "";
 
     const persona = PERSONAS[agent] || PERSONAS.alpha;
-    const selectedModel = typeof model === "string" && ALLOWED.has(model) ? model : "google/gemini-2.5-flash";
+    const strict = strictMode
+      ? `\n\nSTRIKT-MODUS: Jede nicht durch Beweis oder peer-reviewte Quelle gedeckte Aussage MUSS mit [unverifiziert] markiert sein. Verwende SI-Einheiten, präzise Notation, keine Allegorien.`
+      : "";
 
-    // Build transcript of all prior contributions
     const transcript = Array.isArray(history) && history.length > 0
-      ? history.map((m: { agent: string; content: string }) => `${(m.agent || "?").toUpperCase()}: ${m.content}`).join("\n\n")
+      ? history.map(m => `${(m.agent || "?").toUpperCase()}: ${m.content}`).join("\n\n")
       : "(noch keine Beiträge)";
 
     const userMessage = {
       role: "user" as const,
-      content: `Thema: "${topic}"\n\nBisherige Debatte:\n${transcript}\n\nDu bist jetzt dran. Antworte in deiner Rolle.`,
+      content: `Thema: "${topic}"\n\nBisherige Debatte:\n${transcript}\n\nDu bist jetzt dran. Antworte in deiner Rolle, ausschließlich naturwissenschaftlich/mathematisch.`,
     };
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: selectedModel,
-        messages: [
-          { role: "system", content: persona },
-          userMessage,
-        ],
-        stream: true,
-      }),
-    });
+    const target = resolveRoute(model, customKeys, LOVABLE_API_KEY);
+    const response = await streamChat(target, [
+      { role: "system", content: persona + strict },
+      userMessage,
+    ]);
 
     if (!response.ok) {
       if (response.status === 429) {
@@ -81,9 +82,14 @@ serve(async (req) => {
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      if (response.status === 401) {
+        return new Response(JSON.stringify({ error: "API-Key ungültig (401)." }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
-      return new Response(JSON.stringify({ error: "AI Fehler" }), {
+      return new Response(JSON.stringify({ error: `AI Fehler ${response.status}` }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
