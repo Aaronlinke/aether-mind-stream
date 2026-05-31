@@ -48,7 +48,7 @@ export function QuadDebate() {
         "Content-Type": "application/json",
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ topic: topicText, history, agent, model }),
+      body: JSON.stringify({ topic: topicText, history, agent, model, customKeys, strictMode }),
       signal: abortRef.current.signal,
     });
     if (!resp.ok) {
