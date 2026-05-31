@@ -18,10 +18,13 @@ export function MathChat() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [model, setModel] = useState<string>(() => localStorage.getItem("ai-model") || DEFAULT_MODEL);
+  const [customKeys, setCustomKeys] = useState<CustomKeys>(() => loadCustomKeys());
+  const [strictMode, setStrictMode] = useState<boolean>(() => localStorage.getItem("strict-mode") === "1");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   useEffect(() => { localStorage.setItem("ai-model", model); }, [model]);
+  useEffect(() => { localStorage.setItem("strict-mode", strictMode ? "1" : "0"); }, [strictMode]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
