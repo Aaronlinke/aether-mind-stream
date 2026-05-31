@@ -33,6 +33,13 @@ export function MathChat() {
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
 
+    const keyCheck = modelRequiresKey(model, customKeys);
+    if (!keyCheck.ok) {
+      toast({ variant: "destructive", title: `${keyCheck.missing?.toUpperCase()} API-Key fehlt`,
+        description: "Im Keys-Dialog hinterlegen oder ein Lovable-Modell wählen." });
+      return;
+    }
+
     const userMsg: Message = { role: "user", content: input.trim() };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
@@ -47,7 +54,7 @@ export function MathChat() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: [...messages, userMsg], model }),
+        body: JSON.stringify({ messages: [...messages, userMsg], model, customKeys, strictMode }),
       });
 
       if (!resp.ok) {
