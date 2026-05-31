@@ -86,16 +86,27 @@ export function QuadDebate() {
       }
     }
     return full;
-  }, []);
+  }, [customKeys, strictMode]);
 
   const runDebate = useCallback(async () => {
     if (!topic.trim()) return;
+
+    // Validate keys for all selected models
+    const order: AgentId[] = ["alpha", "beta", "gamma", "delta"];
+    for (const a of order) {
+      const chk = modelRequiresKey(models[a], customKeys);
+      if (!chk.ok) {
+        toast({ variant: "destructive", title: `${chk.missing?.toUpperCase()} API-Key fehlt`,
+          description: `Für ${a.toUpperCase()} (${models[a]}). Im Keys-Dialog hinterlegen.` });
+        return;
+      }
+    }
+
     setIsRunning(true);
     setMessages([]);
     setStreamingContent("");
 
     let history: DebateMessage[] = [];
-    const order: AgentId[] = ["alpha", "beta", "gamma", "delta"];
 
     try {
       for (let r = 0; r < rounds; r++) {
