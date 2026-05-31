@@ -34,6 +34,7 @@ const MatrixExp = lazy(() => import("@/components/MatrixExp").then(m => ({ defau
 const ECCFingerprint = lazy(() => import("@/components/ECCFingerprint").then(m => ({ default: m.ECCFingerprint })));
 const Zeitmaschine = lazy(() => import("@/components/Zeitmaschine").then(m => ({ default: m.Zeitmaschine })));
 const QuadDebate = lazy(() => import("@/components/QuadDebate").then(m => ({ default: m.QuadDebate })));
+const Orakel = lazy(() => import("@/components/Orakel").then(m => ({ default: m.Orakel })));
 
 type Mode = "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "quad" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export" | "primes" | "matrix" | "cipher" | "graph" | "modular" | "rsa" | "lorenz" | "mandel" | "ecc" | "organismus" | "expm" | "fp" | "zeit";
 
