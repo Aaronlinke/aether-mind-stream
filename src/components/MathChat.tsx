@@ -155,28 +155,35 @@ export function MathChat() {
   return (
     <div className="flex flex-col h-screen max-w-4xl mx-auto">
       {/* Header */}
-      <header className="border-b border-border p-4 flex items-start justify-between gap-3">
+      <header className="border-b border-border p-4 flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-lg font-medium">MATH / CRYPTO</h1>
           <p className="text-xs text-muted-foreground mt-1">
-            Mathematik • Kryptografie • Base58 • Hashes • Algorithmen
+            Mathematik • Kryptografie • exakt, ohne Mythos
           </p>
         </div>
-        <select
-          value={model}
-          onChange={(e) => setModel(e.target.value)}
-          disabled={isLoading}
-          className="text-xs bg-input border border-border rounded px-2 py-1 text-foreground"
-          title="KI-Modell"
-        >
-          {Object.entries(AI_MODELS.reduce((acc, m) => {
-            (acc[m.provider] ||= []).push(m); return acc;
-          }, {} as Record<string, typeof AI_MODELS>)).map(([prov, list]) => (
-            <optgroup key={prov} label={prov}>
-              {list.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
-            </optgroup>
-          ))}
-        </select>
+        <div className="flex items-center gap-2 flex-wrap">
+          <label className="text-[10px] text-muted-foreground flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" checked={strictMode} onChange={(e) => setStrictMode(e.target.checked)} disabled={isLoading} />
+            STRIKT
+          </label>
+          <ApiKeyManager onChange={setCustomKeys} />
+          <select
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            disabled={isLoading}
+            className="text-xs bg-input border border-border rounded px-2 py-1 text-foreground max-w-[200px]"
+            title="KI-Modell"
+          >
+            {Object.entries(AI_MODELS.reduce((acc, m) => {
+              (acc[m.provider] ||= []).push(m); return acc;
+            }, {} as Record<string, typeof AI_MODELS>)).map(([prov, list]) => (
+              <optgroup key={prov} label={prov}>
+                {list.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+              </optgroup>
+            ))}
+          </select>
+        </div>
       </header>
 
       {/* Messages */}
