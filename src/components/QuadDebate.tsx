@@ -40,7 +40,7 @@ export function QuadDebate() {
   useEffect(() => { localStorage.setItem("quad-strict", strictMode ? "1" : "0"); }, [strictMode]);
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, streamingContent]);
 
-  const streamOne = useCallback(async (agent: AgentId, history: DebateMessage[], topicText: string, model: string): Promise<string> => {
+  const streamOne = useCallback(async (agent: AgentId | "research", history: DebateMessage[], topicText: string, model: string): Promise<string> => {
     abortRef.current = new AbortController();
     const resp = await fetch(DEBATE_URL, {
       method: "POST",
