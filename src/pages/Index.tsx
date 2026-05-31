@@ -106,6 +106,7 @@ const Index = () => {
       <div className="flex-1 overflow-hidden">
         <ErrorBoundary key={mode} label={mode}>
           <Suspense fallback={<LoadingFallback />}>
+            {mode === "orakel" && <Orakel />}
             {mode === "organismus" && <Organismus />}
             {mode === "expm" && <MatrixExp />}
             {mode === "fp" && <ECCFingerprint />}
