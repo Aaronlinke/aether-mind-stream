@@ -173,18 +173,22 @@ export function QuadDebate() {
             </div>
           ))}
         </div>
-        <div className="flex items-center gap-2 mt-3 text-xs">
-          <label className="text-muted-foreground">Runden:</label>
-          <input
-            type="number"
-            min={1}
-            max={10}
-            value={rounds}
-            onChange={(e) => setRounds(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
-            disabled={isRunning}
-            className="w-16 bg-input border border-border rounded px-2 py-0.5 text-foreground"
-          />
-          <span className="text-muted-foreground">× 4 Beiträge</span>
+        <div className="flex items-center gap-3 mt-3 text-xs flex-wrap">
+          <label className="text-muted-foreground flex items-center gap-1">
+            Runden:
+            <input
+              type="number" min={1} max={10} value={rounds}
+              onChange={(e) => setRounds(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
+              disabled={isRunning}
+              className="w-16 bg-input border border-border rounded px-2 py-0.5 text-foreground"
+            />
+            <span>× 4</span>
+          </label>
+          <label className="flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" checked={strictMode} onChange={(e) => setStrictMode(e.target.checked)} disabled={isRunning} />
+            <span className="text-muted-foreground">STRIKT (peer-review-Modus)</span>
+          </label>
+          <ApiKeyManager onChange={setCustomKeys} />
         </div>
       </header>
 
