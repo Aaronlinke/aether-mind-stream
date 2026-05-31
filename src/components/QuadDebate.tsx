@@ -30,11 +30,14 @@ export function QuadDebate() {
     if (saved) try { return JSON.parse(saved); } catch { /* noop */ }
     return { alpha: DEFAULT_MODEL, beta: DEFAULT_MODEL, gamma: DEFAULT_MODEL, delta: DEFAULT_MODEL };
   });
+  const [customKeys, setCustomKeys] = useState<CustomKeys>(() => loadCustomKeys());
+  const [strictMode, setStrictMode] = useState<boolean>(() => localStorage.getItem("quad-strict") === "1");
   const abortRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   useEffect(() => { localStorage.setItem("quad-models", JSON.stringify(models)); }, [models]);
+  useEffect(() => { localStorage.setItem("quad-strict", strictMode ? "1" : "0"); }, [strictMode]);
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, streamingContent]);
 
   const streamOne = useCallback(async (agent: AgentId, history: DebateMessage[], topicText: string, model: string): Promise<string> => {
