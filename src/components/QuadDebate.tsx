@@ -133,7 +133,7 @@ export function QuadDebate() {
       setIsRunning(false);
       setStreamingContent("");
     }
-  }, [topic, rounds, models, streamOne, toast]);
+  }, [topic, rounds, models, customKeys, streamOne, toast]);
 
   const stopDebate = useCallback(() => {
     abortRef.current?.abort();
