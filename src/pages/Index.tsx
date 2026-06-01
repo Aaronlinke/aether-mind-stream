@@ -35,8 +35,12 @@ const ECCFingerprint = lazy(() => import("@/components/ECCFingerprint").then(m =
 const Zeitmaschine = lazy(() => import("@/components/Zeitmaschine").then(m => ({ default: m.Zeitmaschine })));
 const QuadDebate = lazy(() => import("@/components/QuadDebate").then(m => ({ default: m.QuadDebate })));
 const Orakel = lazy(() => import("@/components/Orakel").then(m => ({ default: m.Orakel })));
+const Kollektiv = lazy(() => import("@/components/Kollektiv").then(m => ({ default: m.Kollektiv })));
+const EntropieLab = lazy(() => import("@/components/EntropieLab").then(m => ({ default: m.EntropieLab })));
+const WeakKeyDetector = lazy(() => import("@/components/WeakKeyDetector").then(m => ({ default: m.WeakKeyDetector })));
+const DebattenProtokoll = lazy(() => import("@/components/DebattenProtokoll").then(m => ({ default: m.DebattenProtokoll })));
 
-type Mode = "orakel" | "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "quad" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export" | "primes" | "matrix" | "cipher" | "graph" | "modular" | "rsa" | "lorenz" | "mandel" | "ecc" | "organismus" | "expm" | "fp" | "zeit";
+type Mode = "kollektiv" | "entropie" | "weakkey" | "protokoll" | "orakel" | "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "quad" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export" | "primes" | "matrix" | "cipher" | "graph" | "modular" | "rsa" | "lorenz" | "mandel" | "ecc" | "organismus" | "expm" | "fp" | "zeit";
 
 function LoadingFallback() {
   return (
@@ -50,7 +54,11 @@ const Index = () => {
   const [mode, setMode] = useState<Mode>("formeln");
 
   const modes: { id: Mode; label: string }[] = [
+    { id: "kollektiv", label: "KOLLEKTIV" },
     { id: "orakel", label: "ORAKEL" },
+    { id: "entropie", label: "ENTROPIE" },
+    { id: "weakkey", label: "WEAK-KEY" },
+    { id: "protokoll", label: "PROTOKOLL" },
     { id: "organismus", label: "ORGANISMUS" },
     { id: "chronos", label: "CHRONOS" },
     { id: "pipeline", label: "PIPELINE" },
@@ -106,6 +114,10 @@ const Index = () => {
       <div className="flex-1 overflow-hidden">
         <ErrorBoundary key={mode} label={mode}>
           <Suspense fallback={<LoadingFallback />}>
+            {mode === "kollektiv" && <Kollektiv />}
+            {mode === "entropie" && <EntropieLab />}
+            {mode === "weakkey" && <WeakKeyDetector />}
+            {mode === "protokoll" && <DebattenProtokoll />}
             {mode === "orakel" && <Orakel />}
             {mode === "organismus" && <Organismus />}
             {mode === "expm" && <MatrixExp />}

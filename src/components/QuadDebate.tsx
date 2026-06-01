@@ -39,6 +39,11 @@ export function QuadDebate() {
   useEffect(() => { localStorage.setItem("quad-models", JSON.stringify(models)); }, [models]);
   useEffect(() => { localStorage.setItem("quad-strict", strictMode ? "1" : "0"); }, [strictMode]);
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, streamingContent]);
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem("quad-last-session", JSON.stringify({ topic, messages, ts: Date.now() }));
+    }
+  }, [messages, topic]);
 
   const streamOne = useCallback(async (agent: AgentId | "research", history: DebateMessage[], topicText: string, model: string): Promise<string> => {
     abortRef.current = new AbortController();
