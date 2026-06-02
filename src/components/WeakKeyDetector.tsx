@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Loader2 } from "lucide-react";
+import { Play, Loader2, Download } from "lucide-react";
+import { downloadJson, downloadCsv } from "@/lib/download";
 
 // WEAK-KEY-DETEKTOR: Chi²-Test + KL-Divergenz + heuristischer ML-Score.
 // Generiert Keys aus verschiedenen Quellen und testet Byte-Verteilung gegen Uniform.
@@ -158,6 +159,23 @@ export function WeakKeyDetector() {
           </div>
           <div className="text-[10px] text-muted-foreground border-t border-border pt-2">
             Kritischer Wert χ²_{`{255, α=0.001}`} ≈ 330. χ² &gt; 330 ⇒ Nullhypothese Uniformität verworfen.
+          </div>
+          <div className="flex gap-2 pt-2 border-t border-border">
+            <Button size="sm" variant="outline" onClick={() => downloadJson({ generator: gen, samples: n, ...result, ts: Date.now() }, "weak-key")}>
+              <Download className="h-3 w-3 mr-1" />JSON
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => downloadCsv([
+              ["metric", "value"],
+              ["generator", gen],
+              ["samples", n],
+              ["chi2", result.chi2.toFixed(4)],
+              ["p_value_approx", result.p.toFixed(4)],
+              ["KL_vs_uniform_bit", result.kl.toFixed(6)],
+              ["score", result.score.toFixed(4)],
+              ["verdict", result.verdict],
+            ], "weak-key")}>
+              <Download className="h-3 w-3 mr-1" />CSV
+            </Button>
           </div>
         </div>
       )}

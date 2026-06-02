@@ -1,10 +1,11 @@
 import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Square, Loader2, Brain } from "lucide-react";
+import { Play, Square, Loader2, Brain, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { callMathChat } from "@/lib/aiStream";
 import { AI_MODELS, DEFAULT_MODEL, loadCustomKeys, modelRequiresKey, type CustomKeys } from "@/lib/aiModels";
 import { ApiKeyManager } from "@/components/ApiKeyManager";
+import { downloadJson, downloadMarkdown } from "@/lib/download";
 
 // KOLLEKTIV: N parallele Solver (5–100) → Synthese.
 // Jeder Bot bekommt eine eigene Rolle/Strategie. Concurrency 8 um Rate-Limits zu schonen.
@@ -188,6 +189,19 @@ Streng mathematisch. Keine Mythologie, keine Floskeln.`;
               <Loader2 className="h-3 w-3 animate-spin" />
               {progress}/{n} Bots fertig
             </div>
+          )}
+          {(bots.length > 0 || synthesis) && (
+            <>
+              <Button size="sm" variant="outline" onClick={() => downloadJson({ problem, n, solverModel, synthModel, bots, synthesis, ts: Date.now() }, "kollektiv")}>
+                <Download className="h-3 w-3 mr-1" />JSON
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => {
+                const md = `# KOLLEKTIV-Lauf\n\n**Aufgabe:** ${problem}\n\n**Bots:** ${bots.length} · **Solver:** ${solverModel} · **Synthese:** ${synthModel}\n\n## Synthese\n\n${synthesis || "(keine)"}\n\n---\n\n## Einzelantworten\n\n${bots.map(b => `### Bot #${b.i + 1} · ${b.role}\n\n${b.error ? "Fehler: " + b.error : b.answer}`).join("\n\n")}`;
+                downloadMarkdown(md, "kollektiv");
+              }}>
+                <Download className="h-3 w-3 mr-1" />Markdown
+              </Button>
+            </>
           )}
         </div>
       </div>

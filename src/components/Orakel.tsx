@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import { Sparkles, Loader2, Square } from "lucide-react";
+import { Sparkles, Square, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { AI_MODELS, DEFAULT_MODEL, loadCustomKeys, modelRequiresKey, type CustomKeys } from "@/lib/aiModels";
 import { ApiKeyManager } from "@/components/ApiKeyManager";
+import { downloadMarkdown, downloadJson } from "@/lib/download";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/math-chat`;
 
@@ -183,6 +184,16 @@ export function Orakel() {
               <Button onClick={run} size="sm" disabled={!input.trim()} className="gap-1">
                 <Sparkles className="h-3 w-3" /> Berechnen
               </Button>
+            )}
+            {output && !isLoading && (
+              <>
+                <Button size="sm" variant="outline" onClick={() => downloadMarkdown(`# ORAKEL\n\n**Eingabe:** ${input}\n\n**Modell:** ${model}\n\n---\n\n${output}`, "orakel")}>
+                  <Download className="h-3 w-3" />
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => downloadJson({ input, model, output, ts: Date.now() }, "orakel")}>
+                  JSON
+                </Button>
+              </>
             )}
           </div>
         </div>

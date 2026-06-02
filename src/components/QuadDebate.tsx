@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Play, Square, Loader2 } from "lucide-react";
+import { Play, Square, Loader2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { AI_MODELS, DEFAULT_MODEL, loadCustomKeys, modelRequiresKey, type CustomKeys } from "@/lib/aiModels";
 import { ApiKeyManager } from "@/components/ApiKeyManager";
+import { downloadMarkdown, downloadJson } from "@/lib/download";
 
 type AgentId = "alpha" | "beta" | "gamma" | "delta";
 type DebateMessage = { agent: AgentId; content: string };
@@ -194,6 +195,19 @@ export function QuadDebate() {
             <span className="text-muted-foreground">STRIKT (peer-review-Modus)</span>
           </label>
           <ApiKeyManager onChange={setCustomKeys} />
+          {messages.length > 0 && (
+            <>
+              <Button size="sm" variant="outline" onClick={() => {
+                const md = `# QUAD-Debatte\n\n**Thema:** ${topic}\n\n**Beiträge:** ${messages.length}\n\n---\n\n${messages.map(m => `### ${m.agent.toUpperCase()} · ${AI_MODELS.find(x => x.id === models[m.agent])?.label ?? models[m.agent]}\n\n${m.content}`).join("\n\n")}`;
+                downloadMarkdown(md, "quad-debatte");
+              }}>
+                <Download className="h-3 w-3 mr-1" />MD
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => downloadJson({ topic, rounds, models, messages, ts: Date.now() }, "quad-debatte")}>
+                JSON
+              </Button>
+            </>
+          )}
         </div>
       </header>
 
