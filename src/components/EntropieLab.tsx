@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Loader2 } from "lucide-react";
+import { Play, Loader2, Download } from "lucide-react";
+import { downloadJson, downloadCsv } from "@/lib/download";
 
 // ENTROPIE-LAB: empirische Messung von H(P_k) und I(d;P_k) via Monte-Carlo.
 // d ist 256-bit zufällig; P_k ist eine Projektion (Hash-Prefix, Matrix-Invariante, LSB).
@@ -169,6 +170,24 @@ export function EntropieLab() {
           <div className="text-[10px] text-muted-foreground border-t border-border pt-2 mt-2 space-y-1">
             <div>I(d;P) ≈ H(P) für deterministische Projektion ⇒ H(d|P) ≥ 256 − H(P|uniform) ≈ {(256 - result.hUniform).toFixed(2)} bit Restunsicherheit.</div>
             <div>Hohe KL-Divergenz {result.kl > 0.1 ? "✓ Detektierbar" : "✗ Statistisch nicht trennbar"} — weak-key Generator unterscheidbar von CSPRNG.</div>
+          </div>
+          <div className="flex gap-2 pt-2 border-t border-border">
+            <Button size="sm" variant="outline" onClick={() => downloadJson({ projection: proj, samples, ...result, ts: Date.now() }, "entropie-lab")}>
+              <Download className="h-3 w-3 mr-1" />JSON
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => downloadCsv([
+              ["metric", "value"],
+              ["projection", proj],
+              ["samples", samples],
+              ["H_uniform_bit", result.hUniform.toFixed(6)],
+              ["H_weak_bit", result.hWeak.toFixed(6)],
+              ["space_bits", result.spaceBits],
+              ["KL_weak_uniform_bit", result.kl.toFixed(6)],
+              ["buckets_uniform", result.uniformBucketCount],
+              ["buckets_weak", result.weakBucketCount],
+            ], "entropie-lab")}>
+              <Download className="h-3 w-3 mr-1" />CSV
+            </Button>
           </div>
         </div>
       )}

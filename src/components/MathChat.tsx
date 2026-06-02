@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Loader2 } from "lucide-react";
+import { Send, Loader2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { AI_MODELS, DEFAULT_MODEL, loadCustomKeys, modelRequiresKey, type CustomKeys } from "@/lib/aiModels";
 import { ApiKeyManager } from "@/components/ApiKeyManager";
+import { downloadMarkdown, downloadJson } from "@/lib/download";
 
 type Message = {
   role: "user" | "assistant";
@@ -167,6 +168,19 @@ export function MathChat() {
             <input type="checkbox" checked={strictMode} onChange={(e) => setStrictMode(e.target.checked)} disabled={isLoading} />
             STRIKT
           </label>
+          {messages.length > 0 && (
+            <>
+              <Button size="sm" variant="outline" onClick={() => {
+                const md = `# Math-Chat\n\n**Modell:** ${model}\n\n---\n\n${messages.map(m => `### ${m.role === "user" ? "User" : "AI"}\n\n${m.content}`).join("\n\n")}`;
+                downloadMarkdown(md, "mathchat");
+              }}>
+                <Download className="h-3 w-3 mr-1" />MD
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => downloadJson({ model, messages, ts: Date.now() }, "mathchat")}>
+                JSON
+              </Button>
+            </>
+          )}
           <ApiKeyManager onChange={setCustomKeys} />
           <select
             value={model}
