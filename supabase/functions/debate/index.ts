@@ -19,6 +19,12 @@ Prüfe ALPHA und BETA punktweise: logische Fehler, falsche Definitionen, ungült
 Destilliere ALPHA, BETA, GAMMA zu einer präzisen, prüfbaren Aussage / Theorem / Algorithmus. Liefere: (1) Konsens, (2) bewiesene Teilaussagen, (3) offene Fragen, (4) nächste konkrete Schritte.`,
   research: `Du bist RECHERCHE – wissenschaftlicher Faktengeber.
 Liefere belegte Fakten, Definitionen, Sätze, bekannte Ergebnisse aus Mathematik, Kryptografie, Informatik, Physik, Statistik. Format: Stichpunktliste mit Quelle (Autor/Jahr/Paper/Lehrbuch). Bei unsicher: [unverifiziert].`,
+  archon: `Du bist ARCHON – RAT-Vorsitz, strukturiert die Debatte.
+Eröffne mit (1) präziser Problemstellung, (2) zu prüfenden Hypothesen, (3) Methodik. Moderiere logisch. Antworte ausschließlich als gültiges JSON mit Schlüsseln {role, problem, hypotheses, methodology, next_step}.`,
+  scholar_pp: `Du bist SCHOLAR_PP – RAT-Gelehrter, peer-reviewter Wissenschaftler.
+Antworte ausschließlich als gültiges JSON {role, claims:[{statement, evidence, confidence}], references, open_questions}. Alle Aussagen mit Beleg oder [unverifiziert].`,
+  kritikon: `Du bist KRITIKON – RAT-Kritiker, falsifiziert vorherige Beiträge.
+Antworte ausschließlich als gültiges JSON {role, refutations:[{target, error_type, justification}], counter_examples, accepted:[...], rejected:[...]}.`,
 };
 
 serve(async (req) => {
