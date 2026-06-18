@@ -839,5 +839,62 @@ export const FORMULA_DATASET: FormulaCategory[] = [
         tags: ['game-theory', 'mechanism-design', 'incentive']
       }
     ]
+  },
+  // ─── 19. INFORMATIONSTHEORIE (NEXUS v2) ───────────────────────────────────────
+  {
+    id: 'information',
+    name: 'Informationstheorie',
+    icon: 'Activity',
+    description: 'Shannon-Entropie, Mutual Information, Kanalkapazität — Maße für Unsicherheit und Informationsfluss.',
+    formulas: [
+      {
+        id: 'shannon-entropy',
+        name: 'Shannon-Entropie',
+        latex: 'H(X) = -\\sum_{i} p(x_i) \\log_2 p(x_i)',
+        description: 'Erwartete Information einer Zufallsvariable — Maß der Unsicherheit in Bits.',
+        variables: { 'H(X)': 'Entropie in Bits', 'p(x_i)': 'Wahrscheinlichkeit von x_i' },
+        tags: ['information', 'entropy', 'shannon']
+      },
+      {
+        id: 'conditional-entropy',
+        name: 'Bedingte Entropie',
+        latex: 'H(Y|X) = -\\sum_{x,y} p(x,y) \\log_2 p(y|x)',
+        description: 'Verbleibende Unsicherheit über Y nach Kenntnis von X.',
+        variables: { 'H(Y|X)': 'Bedingte Entropie', 'p(x,y)': 'Verbund-Wahrscheinlichkeit' },
+        tags: ['information', 'entropy', 'conditional']
+      },
+      {
+        id: 'mutual-information',
+        name: 'Mutual Information',
+        latex: 'I(X;Y) = \\sum_{x,y} p(x,y) \\log_2 \\frac{p(x,y)}{p(x)p(y)}',
+        description: 'Geteilte Information zwischen X und Y — Reduktion der Unsicherheit.',
+        variables: { 'I(X;Y)': 'Mutual Information', 'p(x,y)': 'Verbund-Wahrscheinlichkeit' },
+        tags: ['information', 'mutual', 'kl']
+      },
+      {
+        id: 'kl-divergence',
+        name: 'Kullback-Leibler-Divergenz',
+        latex: 'D_{KL}(P \\| Q) = \\sum_i P(i) \\log_2 \\frac{P(i)}{Q(i)}',
+        description: 'Relative Entropie — Distanzmaß zwischen Verteilungen P und Q.',
+        variables: { 'D_{KL}': 'KL-Divergenz', 'P,Q': 'Verteilungen' },
+        tags: ['information', 'kl', 'divergence']
+      },
+      {
+        id: 'channel-capacity',
+        name: 'Kanalkapazität (Shannon-Hartley)',
+        latex: 'C = B \\log_2 (1 + S/N)',
+        description: 'Maximale Übertragungsrate eines verrauschten Kanals mit Bandbreite B und SNR S/N.',
+        variables: { 'C': 'Kapazität (bit/s)', 'B': 'Bandbreite (Hz)', 'S/N': 'Signal-Rausch-Verhältnis' },
+        tags: ['information', 'channel', 'shannon-hartley']
+      },
+      {
+        id: 'min-entropy',
+        name: 'Min-Entropie',
+        latex: 'H_\\infty(X) = -\\log_2 \\max_i p(x_i)',
+        description: 'Worst-case-Entropie — kryptografisch relevant für Schlüsselableitung.',
+        variables: { 'H_\\infty': 'Min-Entropie', 'p(x_i)': 'Wahrscheinlichkeit' },
+        tags: ['information', 'min-entropy', 'crypto']
+      }
+    ]
   }
 ];
