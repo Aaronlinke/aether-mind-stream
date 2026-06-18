@@ -40,8 +40,9 @@ const EntropieLab = lazy(() => import("@/components/EntropieLab").then(m => ({ d
 const WeakKeyDetector = lazy(() => import("@/components/WeakKeyDetector").then(m => ({ default: m.WeakKeyDetector })));
 const DebattenProtokoll = lazy(() => import("@/components/DebattenProtokoll").then(m => ({ default: m.DebattenProtokoll })));
 const Vollrechnung = lazy(() => import("@/components/Vollrechnung").then(m => ({ default: m.Vollrechnung })));
+const Apex = lazy(() => import("@/components/Apex").then(m => ({ default: m.Apex })));
 
-type Mode = "vollrechnung" | "kollektiv" | "entropie" | "weakkey" | "protokoll" | "orakel" | "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "quad" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export" | "primes" | "matrix" | "cipher" | "graph" | "modular" | "rsa" | "lorenz" | "mandel" | "ecc" | "organismus" | "expm" | "fp" | "zeit";
+type Mode = "vollrechnung" | "apex" | "kollektiv" | "entropie" | "weakkey" | "protokoll" | "orakel" | "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "quad" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export" | "primes" | "matrix" | "cipher" | "graph" | "modular" | "rsa" | "lorenz" | "mandel" | "ecc" | "organismus" | "expm" | "fp" | "zeit";
 
 function LoadingFallback() {
   return (
@@ -56,6 +57,7 @@ const Index = () => {
 
   const modes: { id: Mode; label: string }[] = [
     { id: "vollrechnung", label: "VOLLRECHNUNG" },
+    { id: "apex", label: "APEX" },
     { id: "kollektiv", label: "KOLLEKTIV" },
     { id: "orakel", label: "ORAKEL" },
     { id: "entropie", label: "ENTROPIE" },
@@ -117,6 +119,7 @@ const Index = () => {
         <ErrorBoundary key={mode} label={mode}>
           <Suspense fallback={<LoadingFallback />}>
             {mode === "vollrechnung" && <Vollrechnung />}
+            {mode === "apex" && <Apex />}
             {mode === "kollektiv" && <Kollektiv />}
             {mode === "entropie" && <EntropieLab />}
             {mode === "weakkey" && <WeakKeyDetector />}

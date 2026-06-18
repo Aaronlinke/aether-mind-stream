@@ -33,12 +33,14 @@ export function QuadDebate() {
   });
   const [customKeys, setCustomKeys] = useState<CustomKeys>(() => loadCustomKeys());
   const [strictMode, setStrictMode] = useState<boolean>(() => localStorage.getItem("quad-strict") === "1");
+  const [ratMode, setRatMode] = useState<boolean>(() => localStorage.getItem("quad-rat") === "1");
   const abortRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   useEffect(() => { localStorage.setItem("quad-models", JSON.stringify(models)); }, [models]);
   useEffect(() => { localStorage.setItem("quad-strict", strictMode ? "1" : "0"); }, [strictMode]);
+  useEffect(() => { localStorage.setItem("quad-rat", ratMode ? "1" : "0"); }, [ratMode]);
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, streamingContent]);
   useEffect(() => {
     if (messages.length > 0) {
@@ -115,11 +117,15 @@ export function QuadDebate() {
     let history: DebateMessage[] = [];
 
     try {
+      const ratMap: Record<AgentId, string> = {
+        alpha: "archon", beta: "scholar_pp", gamma: "kritikon", delta: "scholar_pp",
+      };
       for (let r = 0; r < rounds; r++) {
         for (const agent of order) {
           setCurrentAgent(agent);
           setStreamingContent("");
-          const response = await streamOne(agent, history, topic, models[agent]);
+          const sendAs = ratMode ? ratMap[agent] : agent;
+          const response = await streamOne(sendAs as AgentId, history, topic, models[agent]);
           const msg: DebateMessage = { agent, content: response };
           history = [...history, msg];
           setMessages([...history]);
@@ -139,7 +145,7 @@ export function QuadDebate() {
       setIsRunning(false);
       setStreamingContent("");
     }
-  }, [topic, rounds, models, customKeys, streamOne, toast]);
+  }, [topic, rounds, models, customKeys, streamOne, toast, ratMode]);
 
   const stopDebate = useCallback(() => {
     abortRef.current?.abort();
@@ -192,7 +198,11 @@ export function QuadDebate() {
           </label>
           <label className="flex items-center gap-1 cursor-pointer">
             <input type="checkbox" checked={strictMode} onChange={(e) => setStrictMode(e.target.checked)} disabled={isRunning} />
-            <span className="text-muted-foreground">STRIKT (peer-review-Modus)</span>
+            <span className="text-muted-foreground">STRIKT</span>
+          </label>
+          <label className="flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" checked={ratMode} onChange={(e) => setRatMode(e.target.checked)} disabled={isRunning} />
+            <span className="text-muted-foreground">RAT (JSON · Archon/Scholar/Kritikon)</span>
           </label>
           <ApiKeyManager onChange={setCustomKeys} />
           {messages.length > 0 && (
