@@ -172,7 +172,14 @@ export function ZipRunner() {
             <div className="flex-1 flex flex-col min-h-0">
               <div className="flex items-center justify-between px-3 py-1 border-b border-border text-xs">
                 <span className="text-muted-foreground">{selected}</span>
-                <Button size="sm" variant="ghost" onClick={() => preview && downloadText(preview.data, selected!.split("/").pop()!, preview.mime)}>
+                <Button size="sm" variant="ghost" onClick={() => {
+                  if (!preview || !selected) return;
+                  const name = selected.split("/").pop()!;
+                  const dot = name.lastIndexOf(".");
+                  const base = dot > 0 ? name.slice(0, dot) : name;
+                  const ext = dot > 0 ? name.slice(dot + 1) : "txt";
+                  downloadText(preview.data, base, ext, preview.mime);
+                }}>
                   <Download className="w-3 h-3" />
                 </Button>
               </div>

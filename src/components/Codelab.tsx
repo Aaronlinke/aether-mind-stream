@@ -112,7 +112,7 @@ export function Codelab() {
 
   const exportAll = () => {
     const blob = `<!doctype html>\n<html><head><meta charset="utf-8"><style>${css}</style></head><body>\n${html.replace(/<!doctype[^>]*>|<\/?html[^>]*>|<\/?head[^>]*>|<\/?body[^>]*>/gi, "")}\n<script>${js}<\/script></body></html>`;
-    downloadText(blob, "codelab.html", "text/html");
+    downloadText(blob, "codelab", "html", "text/html");
   };
 
   return (
