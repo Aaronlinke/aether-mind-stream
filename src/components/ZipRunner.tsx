@@ -268,6 +268,12 @@ REGELN:
               </li>
             ))}
           </ul>
+          {portLog && (
+            <details className="border-t border-border">
+              <summary className="px-2 py-1 text-[10px] text-muted-foreground cursor-pointer">AI-Port-Log</summary>
+              <pre className="p-2 text-[10px] whitespace-pre-wrap font-mono max-h-48 overflow-auto">{portLog}</pre>
+            </details>
+          )}
         </ScrollArea>
 
         <div className="flex flex-col min-h-0">
