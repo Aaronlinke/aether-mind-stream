@@ -132,6 +132,95 @@ export function ZipRunner() {
     URL.revokeObjectURL(url);
   };
 
+  const portToCodelab = useCallback(async () => {
+    if (!zip || porting) return;
+    const customKeys = loadCustomKeys();
+    const chk = modelRequiresKey(model, customKeys);
+    if (!chk.ok) {
+      toast({ variant: "destructive", title: `${chk.missing?.toUpperCase()} API-Key fehlt` });
+      return;
+    }
+    setPorting(true); setPortLog("");
+    try {
+      // Gather text source files (max ~120 KB total, prioritise html/js/ts/kt/py/java)
+      const priority = (p: string) => {
+        if (/\.(html?)$/i.test(p)) return 0;
+        if (/\.(jsx?|tsx?|mjs)$/i.test(p)) return 1;
+        if (/\.(css)$/i.test(p)) return 2;
+        if (/\.(kt|java|py|swift|rs|go|c|cpp)$/i.test(p)) return 3;
+        if (/\.(json|xml|yml|yaml|md|txt)$/i.test(p)) return 4;
+        return 9;
+      };
+      const candidates = entries.filter(e => TEXT_EXT.test(e.path)).sort((a, b) => priority(a.path) - priority(b.path) || a.path.localeCompare(b.path));
+      let budget = 120_000;
+      const parts: string[] = [];
+      for (const e of candidates) {
+        const f = zip.file(e.path); if (!f) continue;
+        const txt = await f.async("string");
+        const snippet = txt.length > 20_000 ? txt.slice(0, 20_000) + "\n…[truncated]" : txt;
+        const block = `--- FILE: ${e.path} ---\n${snippet}\n`;
+        if (block.length > budget) break;
+        parts.push(block); budget -= block.length;
+      }
+      if (parts.length === 0) {
+        toast({ variant: "destructive", title: "Kein Quellcode im ZIP gefunden" });
+        return;
+      }
+
+      const sys = `Du portierst beliebigen Quellcode (Kotlin/Android, Python, Java, Swift, etc.) in eine **lauffähige, interaktive Single-Page-Web-App** aus HTML + CSS + Vanilla-JS, die im Browser-Sandbox läuft.
+REGELN:
+- Rekonstruiere Kernlogik & UI sinngemäß; ersetze Plattform-APIs (Android UI, Dateisystem, native Bibliotheken) durch Browser-Äquivalente (DOM, Canvas, FileReader, WebCrypto, fetch, localStorage).
+- Keine externen Skripte/CDNs nötig – alles self-contained.
+- Ausgabe AUSSCHLIESSLICH als drei Markdown-Codeblöcke in dieser Reihenfolge:
+\`\`\`html ... \`\`\`
+\`\`\`css ... \`\`\`
+\`\`\`js ... \`\`\`
+- Keine Erklärungen, kein Prosatext.`;
+      const user = `Portiere folgenden ZIP-Inhalt (${zipName}) zu einer interaktiven HTML/CSS/JS-App:\n\n${parts.join("\n")}`;
+
+      const resp = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        body: JSON.stringify({ messages: [{ role: "system", content: sys }, { role: "user", content: user }], model, customKeys }),
+      });
+      if (!resp.ok || !resp.body) {
+        const e = await resp.json().catch(() => ({}));
+        throw new Error(e.error || `Fehler ${resp.status}`);
+      }
+      const reader = resp.body.getReader();
+      const dec = new TextDecoder();
+      let buf = "", full = "";
+      while (true) {
+        const { done, value } = await reader.read(); if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let nl: number;
+        while ((nl = buf.indexOf("\n")) !== -1) {
+          let line = buf.slice(0, nl); buf = buf.slice(nl + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (!line.startsWith("data: ")) continue;
+          const s = line.slice(6).trim();
+          if (s === "[DONE]") break;
+          try { const c = JSON.parse(s).choices?.[0]?.delta?.content; if (c) { full += c; setPortLog(full.slice(-4000)); } } catch { /* noop */ }
+        }
+      }
+      const h = extractBlock(full, "html");
+      const c = extractBlock(full, "css");
+      const j = extractBlock(full, "js") || extractBlock(full, "javascript");
+      if (!h && !c && !j) {
+        toast({ variant: "destructive", title: "Keine Codeblöcke erkannt", description: "Siehe AI-Log unten." });
+        return;
+      }
+      if (h) localStorage.setItem("codelab-html", h);
+      if (c) localStorage.setItem("codelab-css", c);
+      if (j) localStorage.setItem("codelab-js", j);
+      toast({ title: "Portiert → CODELAB", description: "Wechsle zum CODELAB-Tab." });
+      window.dispatchEvent(new CustomEvent("zr:switch-mode", { detail: "codelab" }));
+    } catch (e) {
+      toast({ variant: "destructive", title: "Port-Fehler", description: (e as Error).message });
+    } finally { setPorting(false); }
+  }, [zip, entries, model, porting, zipName, toast]);
+
+
   return (
     <div className="h-full flex flex-col bg-background">
       <header className="border-b border-border p-3 flex items-center justify-between gap-2 flex-wrap">
@@ -139,11 +228,22 @@ export function ZipRunner() {
           <h1 className="text-lg font-medium">ZIPRUNNER</h1>
           <p className="text-xs text-muted-foreground">ZIP entpacken · HTML rendern · Sandbox-Preview {zipName && `· ${zipName}`}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center flex-wrap">
+          <select value={model} onChange={e => { setModel(e.target.value); localStorage.setItem("ziprunner-model", e.target.value); }} className="text-xs bg-input border border-border rounded px-1.5 py-1">
+            {Object.entries(AI_MODELS.reduce((a, m) => { (a[m.provider] ||= []).push(m); return a; }, {} as Record<string, typeof AI_MODELS>)).map(([p, l]) => (
+              <optgroup key={p} label={p}>{l.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}</optgroup>
+            ))}
+          </select>
           <input ref={fileRef} type="file" accept=".zip,application/zip" hidden onChange={e => e.target.files?.[0] && loadZip(e.target.files[0])} />
           <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()}>
             <Upload className="w-3 h-3 mr-1" />ZIP laden
           </Button>
+          {zip && (
+            <Button size="sm" onClick={portToCodelab} disabled={porting}>
+              {porting ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Sparkles className="w-3 h-3 mr-1" />}
+              AI → CODELAB
+            </Button>
+          )}
           {selected && (
             <Button size="sm" variant="outline" onClick={downloadCurrent}>
               <Download className="w-3 h-3 mr-1" />Datei
