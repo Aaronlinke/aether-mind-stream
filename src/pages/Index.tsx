@@ -57,6 +57,16 @@ function LoadingFallback() {
 const Index = () => {
   const [mode, setMode] = useState<Mode>("formeln");
 
+  useEffect(() => {
+    const h = (e: Event) => {
+      const m = (e as CustomEvent<string>).detail as Mode;
+      if (m) setMode(m);
+    };
+    window.addEventListener("zr:switch-mode", h);
+    return () => window.removeEventListener("zr:switch-mode", h);
+  }, []);
+
+
   const modes: { id: Mode; label: string }[] = [
     { id: "vollrechnung", label: "VOLLRECHNUNG" },
     { id: "apex", label: "APEX" },
