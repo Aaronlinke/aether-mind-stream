@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from "react";
+import { useState, lazy, Suspense, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -56,6 +56,16 @@ function LoadingFallback() {
 
 const Index = () => {
   const [mode, setMode] = useState<Mode>("formeln");
+
+  useEffect(() => {
+    const h = (e: Event) => {
+      const m = (e as CustomEvent<string>).detail as Mode;
+      if (m) setMode(m);
+    };
+    window.addEventListener("zr:switch-mode", h);
+    return () => window.removeEventListener("zr:switch-mode", h);
+  }, []);
+
 
   const modes: { id: Mode; label: string }[] = [
     { id: "vollrechnung", label: "VOLLRECHNUNG" },
