@@ -1,10 +1,19 @@
 import { useState, useRef, useCallback } from "react";
 import JSZip from "jszip";
-import { Upload, Play, FileText, Loader2, Download } from "lucide-react";
+import { Upload, Play, FileText, Loader2, Download, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { downloadText } from "@/lib/download";
+import { AI_MODELS, DEFAULT_MODEL, loadCustomKeys, modelRequiresKey } from "@/lib/aiModels";
+
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/math-chat`;
+
+function extractBlock(src: string, lang: string): string | null {
+  const re = new RegExp("```" + lang + "\\s*\\n([\\s\\S]*?)```", "i");
+  const m = src.match(re);
+  return m ? m[1].trim() : null;
+}
 
 type Entry = { path: string; size: number; isText: boolean };
 
@@ -31,6 +40,9 @@ export function ZipRunner() {
   const [zipName, setZipName] = useState("");
   const blobUrlsRef = useRef<string[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [porting, setPorting] = useState(false);
+  const [portLog, setPortLog] = useState("");
+  const [model, setModel] = useState<string>(() => localStorage.getItem("ziprunner-model") || DEFAULT_MODEL);
   const { toast } = useToast();
 
   const cleanupBlobs = () => {
