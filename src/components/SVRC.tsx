@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getSVRC } from "@/lib/svrc";
-import { downloadJSON } from "@/lib/download";
+import { downloadJson } from "@/lib/download";
 
 export function SVRC() {
   const svrc = getSVRC();
