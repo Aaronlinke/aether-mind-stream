@@ -114,13 +114,13 @@ export function SVRC() {
           <Textarea value={data} onChange={e => setData(e.target.value)} rows={2} className="font-mono text-xs" />
           <div className="flex gap-2">
             <Button size="sm" onClick={analyze}>Analysieren</Button>
-            <Button size="sm" variant="outline" onClick={() => downloadJson("svrc-snapshot.json", {
+            <Button size="sm" variant="outline" onClick={() => downloadJson({
               stats: st,
               patterns: svrc.learning.patterns,
               memories: svrc.memory.memories.slice(-50),
               options: svrc.decision.options,
               history: svrc.field.history,
-            })}>Snapshot ↓</Button>
+            }, "svrc-snapshot")}>Snapshot ↓</Button>
           </div>
           {result && <div className="text-xs font-mono border-l-2 border-primary pl-2">{result}</div>}
         </div>
