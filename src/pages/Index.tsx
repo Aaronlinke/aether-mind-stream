@@ -43,8 +43,9 @@ const Vollrechnung = lazy(() => import("@/components/Vollrechnung").then(m => ({
 const Apex = lazy(() => import("@/components/Apex").then(m => ({ default: m.Apex })));
 const Codelab = lazy(() => import("@/components/Codelab").then(m => ({ default: m.Codelab })));
 const ZipRunner = lazy(() => import("@/components/ZipRunner").then(m => ({ default: m.ZipRunner })));
+const TermuxForge = lazy(() => import("@/components/TermuxForge").then(m => ({ default: m.TermuxForge })));
 
-type Mode = "vollrechnung" | "apex" | "codelab" | "ziprunner" | "kollektiv" | "entropie" | "weakkey" | "protokoll" | "orakel" | "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "quad" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export" | "primes" | "matrix" | "cipher" | "graph" | "modular" | "rsa" | "lorenz" | "mandel" | "ecc" | "organismus" | "expm" | "fp" | "zeit";
+type Mode = "termux" | "vollrechnung" | "apex" | "codelab" | "ziprunner" | "kollektiv" | "entropie" | "weakkey" | "protokoll" | "orakel" | "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "quad" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export" | "primes" | "matrix" | "cipher" | "graph" | "modular" | "rsa" | "lorenz" | "mandel" | "ecc" | "organismus" | "expm" | "fp" | "zeit";
 
 function LoadingFallback() {
   return (
@@ -68,6 +69,7 @@ const Index = () => {
 
 
   const modes: { id: Mode; label: string }[] = [
+    { id: "termux", label: "TERMUX" },
     { id: "vollrechnung", label: "VOLLRECHNUNG" },
     { id: "apex", label: "APEX" },
     { id: "codelab", label: "CODELAB" },
@@ -132,6 +134,7 @@ const Index = () => {
       <div className="flex-1 overflow-hidden">
         <ErrorBoundary key={mode} label={mode}>
           <Suspense fallback={<LoadingFallback />}>
+            {mode === "termux" && <TermuxForge />}
             {mode === "vollrechnung" && <Vollrechnung />}
             {mode === "apex" && <Apex />}
             {mode === "codelab" && <Codelab />}
