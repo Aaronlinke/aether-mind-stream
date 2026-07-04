@@ -1,12 +1,13 @@
 import { useState, useRef } from "react";
-import { Play, Square, Download, Copy, Loader2, CheckCircle2, Circle } from "lucide-react";
+import { Play, Square, Download, Copy, Loader2, CheckCircle2, Circle, FileJson } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { AI_MODELS, DEFAULT_MODEL, loadCustomKeys, type CustomKeys } from "@/lib/aiModels";
 import { ApiKeyManager } from "@/components/ApiKeyManager";
 import { callMathChat } from "@/lib/aiStream";
-import { downloadText } from "@/lib/download";
+import { downloadText, downloadJson } from "@/lib/download";
+import { getSVRC } from "@/lib/svrc";
 
 /**
  * TERMUX-FORGE
@@ -16,10 +17,11 @@ import { downloadText } from "@/lib/download";
  * inkl. pkg/pip-Abhängigkeiten, Fehlerbehandlung und Kurzanleitung.
  */
 
-type Stage = "idle" | "plan" | "code" | "lint" | "fix" | "pack" | "done" | "error";
+type Stage = "idle" | "plan" | "science" | "code" | "lint" | "fix" | "pack" | "done" | "error";
 
 const STAGES: { id: Stage; label: string }[] = [
   { id: "plan", label: "PLAN" },
+  { id: "science", label: "SCIENCE-FILTER" },
   { id: "code", label: "CODE" },
   { id: "lint", label: "PRÜFUNG" },
   { id: "fix",  label: "FIX" },
@@ -38,6 +40,23 @@ Antworte AUSSCHLIESSLICH als gültiges JSON, keine Prosa, keine Codefences:
  "steps": ["kurzer Schritt 1", "..."],
  "risks": ["was schiefgehen kann"],
  "notes": "sehr kurz"
+}`;
+
+const P_SCIENCE = `Du bist SCIENCE-FILTER. Ziel: Plan & Anforderung von Mythologie, Esoterik, Science-Fiction-Vokabular und Marketing-Buzz befreien. Ersetze schwammige Begriffe durch präzise, wissenschaftlich fundierte Termini (Physik, Informatik, Kryptographie, Statistik, Netzwerk, Linux/Android-Interna). Prüfe technische Machbarkeit auf Termux (Android, nicht-root, $PREFIX-Sandbox). Erweitere den Plan wo sinnvoll um belegbare Methoden, reale Bibliotheken, echte APIs. Nichts erfinden – wenn etwas nicht real geht, markiere es unter "unmachbar" und schlage nächstbeste reale Alternative vor. "Geht nicht" existiert nicht solange eine reale Umsetzung möglich ist.
+Antworte AUSSCHLIESSLICH als JSON:
+{
+ "cleaned_intent": "präzise Beschreibung ohne Buzzwords",
+ "replaced_terms": [{"from":"...","to":"..."}],
+ "scientific_basis": ["konkrete Fachbegriffe/Methoden/Papers/Manpages"],
+ "feasibility": "ok" | "partial" | "unmachbar",
+ "extended_scope": ["was zusätzlich realistisch drin ist"],
+ "unmachbar": ["nur was auf Termux wirklich unmöglich ist, mit Grund"],
+ "plan_patch": {  // gleiche Struktur wie PLANNER-JSON, nur überschriebene Felder
+   "termux_packages": [...],
+   "pip_packages": [...],
+   "steps": [...],
+   "risks": [...]
+ }
 }`;
 
 const P_CODE = `Du bist CODER. Schreibe basierend auf dem Plan ein VOLLSTÄNDIGES, lauffähiges Script für Termux.
@@ -128,18 +147,39 @@ export function TermuxForge() {
     });
 
     try {
+      // Live-Kontext aus SVRC-Feld (geteilt mit allen KIs im System)
+      let svrcCtx = "";
+      try { svrcCtx = getSVRC().contextSnapshot(); } catch {}
+      const ctxBlock = svrcCtx ? `\n\n[SVRC-KONTEXT – nur als Hintergrundzustand, nicht in Output leaken]\n${svrcCtx}` : "";
+
       // 1) PLAN
       say("· Analysiere Anforderung …");
-      const planRaw = await call(P_PLAN, prompt);
+      const planRaw = await call(P_PLAN, prompt + ctxBlock);
       const planObj = safeJson<any>(planRaw);
       if (!planObj) throw new Error("Plan konnte nicht geparst werden");
       setPlan(planObj);
       say(`✓ Plan: ${planObj.language} · ${planObj.filename} · ${(planObj.termux_packages||[]).length} pkg`);
+
+      // 2) SCIENCE-FILTER (Buzzword-Reinigung + Machbarkeit + Erweiterung)
+      setStage("science");
+      say("· Wissenschafts-Filter (Mythos/Sci-Fi raus, Fakten rein) …");
+      const sciRaw = await call(P_SCIENCE, `Anforderung:\n${prompt}\n\nPlan:\n${JSON.stringify(planObj, null, 2)}`);
+      const sciObj = safeJson<any>(sciRaw);
+      let mergedPlan = planObj;
+      if (sciObj) {
+        mergedPlan = { ...planObj, ...(sciObj.plan_patch || {}), _science: sciObj };
+        setPlan(mergedPlan);
+        const rep = (sciObj.replaced_terms || []).length;
+        say(`✓ Filter: ${rep} Begriffe ersetzt · Machbarkeit=${sciObj.feasibility || "?"}`);
+        if ((sciObj.unmachbar || []).length) say(`  ⚠ unmachbar: ${sciObj.unmachbar.join("; ")}`);
+      } else {
+        say("· Filter übersprungen (parse-fail)");
+      }
       setStage("code");
 
-      // 2) CODE
+      // 3) CODE
       say("· Generiere Script …");
-      const codeRaw = await call(P_CODE, `Plan:\n${JSON.stringify(planObj, null, 2)}\n\nUser-Anforderung:\n${prompt}`);
+      const codeRaw = await call(P_CODE, `Plan:\n${JSON.stringify(mergedPlan, null, 2)}\n\nUser-Anforderung (gereinigt):\n${sciObj?.cleaned_intent || prompt}`);
       let code = stripFences(codeRaw);
       say(`✓ ${code.split("\n").length} Zeilen erzeugt`);
       setStage("lint");
@@ -173,6 +213,11 @@ export function TermuxForge() {
       setReadme(readmeRaw.trim());
       say("✓ Fertig.");
       setStage("done");
+      try {
+        const s = getSVRC();
+        s.memory.store({ kind: "termux-forge", intent: prompt.slice(0, 200), lang: mergedPlan.language, file: mergedPlan.filename }, 0.7);
+        s.think(3);
+      } catch {}
     } catch (e: any) {
       if (e?.name === "AbortError") { setStage("idle"); return; }
       say(`✗ Fehler: ${e?.message || e}`);
@@ -210,6 +255,44 @@ export function TermuxForge() {
               ))}
             </select>
             <ApiKeyManager onChange={setKeys} />
+            <Button
+              size="sm" variant="outline" className="h-7 text-[10px] gap-1"
+              onClick={() => {
+                let svrc: any = null;
+                try {
+                  const s = getSVRC();
+                  svrc = { stats: s.field.stats(), patterns: s.learning.patterns.length, memories: s.memory.memories.length, snapshot: s.contextSnapshot() };
+                } catch {}
+                downloadJson({
+                  module: "TERMUX-FORGE",
+                  version: 2,
+                  generated_at: new Date().toISOString(),
+                  pipeline: STAGES.map(s => s.id),
+                  agents: {
+                    PLANNER: { output: "json-plan", prompt: P_PLAN },
+                    SCIENCE_FILTER: { output: "json-cleaned", prompt: P_SCIENCE },
+                    CODER: { output: "raw-script", prompt: P_CODE },
+                    LINTER: { output: "json-lint", prompt: P_LINT },
+                    FIXER: { output: "raw-script", prompt: P_FIX },
+                    PACKAGER: { output: "markdown-readme", prompt: P_PACK },
+                  },
+                  runtime: {
+                    model,
+                    customKeysConfigured: Object.keys(keys || {}),
+                    callTransport: "callMathChat → supabase/functions/math-chat",
+                    abortable: true,
+                  },
+                  state: {
+                    stage, log, plan, lint,
+                    scriptChars: script.length, readmeChars: readme.length,
+                  },
+                  svrc_link: svrc,
+                }, "termux-forge-system");
+                toast({ title: "System als JSON exportiert" });
+              }}
+            >
+              <FileJson className="h-3 w-3" /> System JSON
+            </Button>
           </div>
         </header>
 
