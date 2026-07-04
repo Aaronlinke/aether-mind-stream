@@ -42,6 +42,23 @@ Antworte AUSSCHLIESSLICH als gültiges JSON, keine Prosa, keine Codefences:
  "notes": "sehr kurz"
 }`;
 
+const P_SCIENCE = `Du bist SCIENCE-FILTER. Ziel: Plan & Anforderung von Mythologie, Esoterik, Science-Fiction-Vokabular und Marketing-Buzz befreien. Ersetze schwammige Begriffe durch präzise, wissenschaftlich fundierte Termini (Physik, Informatik, Kryptographie, Statistik, Netzwerk, Linux/Android-Interna). Prüfe technische Machbarkeit auf Termux (Android, nicht-root, $PREFIX-Sandbox). Erweitere den Plan wo sinnvoll um belegbare Methoden, reale Bibliotheken, echte APIs. Nichts erfinden – wenn etwas nicht real geht, markiere es unter "unmachbar" und schlage nächstbeste reale Alternative vor. "Geht nicht" existiert nicht solange eine reale Umsetzung möglich ist.
+Antworte AUSSCHLIESSLICH als JSON:
+{
+ "cleaned_intent": "präzise Beschreibung ohne Buzzwords",
+ "replaced_terms": [{"from":"...","to":"..."}],
+ "scientific_basis": ["konkrete Fachbegriffe/Methoden/Papers/Manpages"],
+ "feasibility": "ok" | "partial" | "unmachbar",
+ "extended_scope": ["was zusätzlich realistisch drin ist"],
+ "unmachbar": ["nur was auf Termux wirklich unmöglich ist, mit Grund"],
+ "plan_patch": {  // gleiche Struktur wie PLANNER-JSON, nur überschriebene Felder
+   "termux_packages": [...],
+   "pip_packages": [...],
+   "steps": [...],
+   "risks": [...]
+ }
+}`;
+
 const P_CODE = `Du bist CODER. Schreibe basierend auf dem Plan ein VOLLSTÄNDIGES, lauffähiges Script für Termux.
 REGELN:
 - Wenn bash: Shebang '#!/data/data/com.termux/files/usr/bin/env bash', 'set -euo pipefail', klare Fehlermeldungen.
