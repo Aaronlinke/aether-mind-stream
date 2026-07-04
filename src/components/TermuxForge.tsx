@@ -215,7 +215,7 @@ export function TermuxForge() {
       setStage("done");
       try {
         const s = getSVRC();
-        s.memory.remember({ kind: "termux-forge", intent: prompt.slice(0, 200), lang: mergedPlan.language, file: mergedPlan.filename }, 0.7);
+        s.memory.store({ kind: "termux-forge", intent: prompt.slice(0, 200), lang: mergedPlan.language, file: mergedPlan.filename }, 0.7);
         s.think(3);
       } catch {}
     } catch (e: any) {
