@@ -17,10 +17,11 @@ import { getSVRC } from "@/lib/svrc";
  * inkl. pkg/pip-Abhängigkeiten, Fehlerbehandlung und Kurzanleitung.
  */
 
-type Stage = "idle" | "plan" | "code" | "lint" | "fix" | "pack" | "done" | "error";
+type Stage = "idle" | "plan" | "science" | "code" | "lint" | "fix" | "pack" | "done" | "error";
 
 const STAGES: { id: Stage; label: string }[] = [
   { id: "plan", label: "PLAN" },
+  { id: "science", label: "SCIENCE-FILTER" },
   { id: "code", label: "CODE" },
   { id: "lint", label: "PRÜFUNG" },
   { id: "fix",  label: "FIX" },
