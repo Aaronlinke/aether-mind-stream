@@ -250,6 +250,44 @@ export function TermuxForge() {
               ))}
             </select>
             <ApiKeyManager onChange={setKeys} />
+            <Button
+              size="sm" variant="outline" className="h-7 text-[10px] gap-1"
+              onClick={() => {
+                let svrc: any = null;
+                try {
+                  const s = getSVRC();
+                  svrc = { stats: s.field.stats(), patterns: s.learning.patterns.length, memories: s.memory.memories.length, snapshot: s.contextSnapshot() };
+                } catch {}
+                downloadJson({
+                  module: "TERMUX-FORGE",
+                  version: 2,
+                  generated_at: new Date().toISOString(),
+                  pipeline: STAGES.map(s => s.id),
+                  agents: {
+                    PLANNER: { output: "json-plan", prompt: P_PLAN },
+                    SCIENCE_FILTER: { output: "json-cleaned", prompt: P_SCIENCE },
+                    CODER: { output: "raw-script", prompt: P_CODE },
+                    LINTER: { output: "json-lint", prompt: P_LINT },
+                    FIXER: { output: "raw-script", prompt: P_FIX },
+                    PACKAGER: { output: "markdown-readme", prompt: P_PACK },
+                  },
+                  runtime: {
+                    model,
+                    customKeysConfigured: Object.keys(keys || {}),
+                    callTransport: "callMathChat → supabase/functions/math-chat",
+                    abortable: true,
+                  },
+                  state: {
+                    stage, log, plan, lint,
+                    scriptChars: script.length, readmeChars: readme.length,
+                  },
+                  svrc_link: svrc,
+                }, "termux-forge-system");
+                toast({ title: "System als JSON exportiert" });
+              }}
+            >
+              <FileJson className="h-3 w-3" /> System JSON
+            </Button>
           </div>
         </header>
 
