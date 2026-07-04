@@ -1,12 +1,13 @@
 import { useState, useRef } from "react";
-import { Play, Square, Download, Copy, Loader2, CheckCircle2, Circle } from "lucide-react";
+import { Play, Square, Download, Copy, Loader2, CheckCircle2, Circle, FileJson } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { AI_MODELS, DEFAULT_MODEL, loadCustomKeys, type CustomKeys } from "@/lib/aiModels";
 import { ApiKeyManager } from "@/components/ApiKeyManager";
 import { callMathChat } from "@/lib/aiStream";
-import { downloadText } from "@/lib/download";
+import { downloadText, downloadJson } from "@/lib/download";
+import { getSVRC } from "@/lib/svrc";
 
 /**
  * TERMUX-FORGE
