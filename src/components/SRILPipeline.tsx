@@ -107,15 +107,12 @@ export function SRILPipeline() {
       // Sign with evolved key
       const sig = await ecdsaSign(privateKeyHex, msgHash, seed);
       
-      // Verify: check s * k ≡ z + r*d (mod n) — simplified verification
-      const d = BigInt('0x' + privateKeyHex);
+      // Echte ECDSA-Verifikation gegen den öffentlichen Punkt Q = dG
       const z = BigInt('0x' + msgHash.substring(0, 64));
       const r = BigInt('0x' + sig.r);
       const s = BigInt('0x' + sig.s);
-      const sInv = modInverse(s, N_CURVE);
-      const u1 = (z * sInv) % N_CURVE;
-      const u2 = (r * sInv) % N_CURVE;
-      const verified = u1 > 0n && u2 > 0n && d > 0n;
+      const verified = ecdsaVerify(r, s, z, sig.pub);
+
       
       const step: PipelineStep = {
         t, H: h, N: n, G: g,
