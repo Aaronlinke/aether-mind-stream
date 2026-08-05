@@ -43,7 +43,6 @@ async function sha256(input: string): Promise<string> {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-const modInverse = (a: bigint, m: bigint): bigint => modInv(a, m);
 
 /** Echte ECDSA-Signatur auf secp256k1: r = (kG).x mod n, s = k⁻¹(z + rd) mod n. */
 async function ecdsaSign(privateKeyHex: string, messageHash: string, srilSeed: string):
