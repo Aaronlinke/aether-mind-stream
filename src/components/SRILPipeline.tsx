@@ -41,44 +41,33 @@ async function sha256(input: string): Promise<string> {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-function modInverse(a: bigint, m: bigint): bigint {
-  let m0 = m, y = 0n, x = 1n;
-  if (m === 1n) return 0n;
-  a = ((a % m) + m) % m;
-  while (a > 1n) {
-    if (m === 0n) return 0n;
-    const q = a / m;
-    let t = m;
-    m = a % m;
-    a = t;
-    t = y;
-    y = x - q * y;
-    x = t;
-  }
-  return ((x % m0) + m0) % m0;
+const modInverse = (a: bigint, m: bigint): bigint => modInv(a, m);
+
+/** Echte ECDSA-Signatur auf secp256k1: r = (kG).x mod n, s = k⁻¹(z + rd) mod n. */
+async function ecdsaSign(privateKeyHex: string, messageHash: string, srilSeed: string):
+  Promise<{ r: string; s: string; k: bigint; pub: { x: bigint; y: bigint } }> {
+  const kHash = await sha256(srilSeed + messageHash);
+  const k = mod(BigInt('0x' + kHash), N_CURVE - 1n) + 1n;
+  const d = mod(BigInt('0x' + privateKeyHex), N_CURVE - 1n) + 1n;
+  const z = BigInt('0x' + messageHash.substring(0, 64));
+
+  const R = ecMul(k)!;                       // echte Skalarmultiplikation
+  const r = mod(R.x, N_CURVE);
+  const s = mod(modInv(k, N_CURVE) * (z + r * d), N_CURVE);
+  const pub = ecMul(d)! as { x: bigint; y: bigint };
+
+  return { r: r.toString(16).padStart(64, '0'), s: s.toString(16).padStart(64, '0'), k, pub };
 }
 
-// Simplified ECDSA sign (deterministic k from SRIL state)
-async function ecdsaSign(privateKeyHex: string, messageHash: string, srilSeed: string): Promise<{ r: string; s: string }> {
-  // k derived from SRIL seed + message
-  const kHash = await sha256(srilSeed + messageHash);
-  const k = BigInt('0x' + kHash) % (N_CURVE - 1n) + 1n;
-  const d = BigInt('0x' + privateKeyHex);
-  const z = BigInt('0x' + messageHash.substring(0, 64));
-  
-  // r = (k * G).x mod n — simplified: hash-based simulation
-  const rHash = await sha256(k.toString(16));
-  const r = BigInt('0x' + rHash) % (N_CURVE - 1n) + 1n;
-  
-  // s = k^-1 * (z + r*d) mod n
-  const kInv = modInverse(k, N_CURVE);
-  const s = (kInv * ((z + r * d) % N_CURVE)) % N_CURVE;
-  
-  return {
-    r: r.toString(16).padStart(64, '0'),
-    s: s.toString(16).padStart(64, '0')
-  };
+/** Standard-ECDSA-Verifikation: R' = u₁G + u₂Q, gültig ⇔ R'.x ≡ r (mod n). */
+function ecdsaVerify(r: bigint, s: bigint, z: bigint, Q: { x: bigint; y: bigint }): boolean {
+  if (r <= 0n || r >= N_CURVE || s <= 0n || s >= N_CURVE) return false;
+  if (!onCurve(Q)) return false;
+  const w = modInv(s, N_CURVE);
+  const R = ecAdd(ecMul(mod(z * w, N_CURVE)), ecMul(mod(r * w, N_CURVE), Q));
+  return !!R && mod(R.x, N_CURVE) === r;
 }
+
 
 export function SRILPipeline() {
   const [h0, setH0] = useState(-4.256);
