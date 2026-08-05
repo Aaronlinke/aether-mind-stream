@@ -5,6 +5,8 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Play, Square, Download, Zap, ArrowRight, Shield } from 'lucide-react';
+import { mod, modInv, ecAdd, ecMul, onCurve } from '@/lib/verify';
+
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SRIL ↔ ECDSA PIPELINE
