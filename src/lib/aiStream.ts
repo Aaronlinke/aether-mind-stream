@@ -81,5 +81,11 @@ export async function callMathChat(opts: {
       } catch { /* noop */ }
     }
   }
+  if (useSvrc && full) {
+    const core = getSVRC();
+    core.memory.store(`A[${opts.source ?? "ai"}]: ${full.slice(0, 600)}`, 2);
+    core.learning.learn(Array.from(full.slice(0, 256)).map(ch => ch.charCodeAt(0)));
+  }
   return full;
 }
+
