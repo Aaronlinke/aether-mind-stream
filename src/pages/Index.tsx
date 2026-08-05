@@ -44,9 +44,11 @@ const Apex = lazy(() => import("@/components/Apex").then(m => ({ default: m.Apex
 const Codelab = lazy(() => import("@/components/Codelab").then(m => ({ default: m.Codelab })));
 const ZipRunner = lazy(() => import("@/components/ZipRunner").then(m => ({ default: m.ZipRunner })));
 const TermuxForge = lazy(() => import("@/components/TermuxForge").then(m => ({ default: m.TermuxForge })));
+const Verify = lazy(() => import("@/components/Verify").then(m => ({ default: m.Verify })));
+const CloudPanel = lazy(() => import("@/components/CloudPanel").then(m => ({ default: m.CloudPanel })));
 const SVRC = lazy(() => import("@/components/SVRC").then(m => ({ default: m.SVRC })));
 
-type Mode = "svrc" | "termux" | "vollrechnung" | "apex" | "codelab" | "ziprunner" | "kollektiv" | "entropie" | "weakkey" | "protokoll" | "orakel" | "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "quad" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export" | "primes" | "matrix" | "cipher" | "graph" | "modular" | "rsa" | "lorenz" | "mandel" | "ecc" | "organismus" | "expm" | "fp" | "zeit";
+type Mode = "verify" | "cloud" | "svrc" | "termux" | "vollrechnung" | "apex" | "codelab" | "ziprunner" | "kollektiv" | "entropie" | "weakkey" | "protokoll" | "orakel" | "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "quad" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export" | "primes" | "matrix" | "cipher" | "graph" | "modular" | "rsa" | "lorenz" | "mandel" | "ecc" | "organismus" | "expm" | "fp" | "zeit";
 
 function LoadingFallback() {
   return (
@@ -70,6 +72,8 @@ const Index = () => {
 
 
   const modes: { id: Mode; label: string }[] = [
+    { id: "verify", label: "VERIFIKATION" },
+    { id: "cloud", label: "CLOUD" },
     { id: "svrc", label: "SVRC" },
     { id: "termux", label: "TERMUX" },
     { id: "vollrechnung", label: "VOLLRECHNUNG" },
@@ -136,6 +140,8 @@ const Index = () => {
       <div className="flex-1 overflow-hidden">
         <ErrorBoundary key={mode} label={mode}>
           <Suspense fallback={<LoadingFallback />}>
+            {mode === "verify" && <Verify />}
+            {mode === "cloud" && <CloudPanel />}
             {mode === "svrc" && <SVRC />}
             {mode === "termux" && <TermuxForge />}
             {mode === "vollrechnung" && <Vollrechnung />}
