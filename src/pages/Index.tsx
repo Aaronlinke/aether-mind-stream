@@ -140,6 +140,8 @@ const Index = () => {
       <div className="flex-1 overflow-hidden">
         <ErrorBoundary key={mode} label={mode}>
           <Suspense fallback={<LoadingFallback />}>
+            {mode === "verify" && <Verify />}
+            {mode === "cloud" && <CloudPanel />}
             {mode === "svrc" && <SVRC />}
             {mode === "termux" && <TermuxForge />}
             {mode === "vollrechnung" && <Vollrechnung />}
