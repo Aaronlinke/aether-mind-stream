@@ -19,7 +19,7 @@ const W = new Uint32Array(64);
 export function sha256Words(msg: Uint8Array): Uint32Array {
   const len = msg.length;
   const bitLen = len * 8;
-  const total = (((len + 9) >> 6) + 1) << 6; // aufgerundet auf 64-Byte-Blöcke
+  const total = (Math.floor((len + 8) / 64) + 1) * 64; // aufgerundet auf 64-Byte-Blöcke
   const buf = new Uint8Array(total);
   buf.set(msg);
   buf[len] = 0x80;
