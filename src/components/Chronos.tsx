@@ -12,6 +12,7 @@ import {
   Play, Pause, RotateCcw, Copy, Check, Shield, 
   TrendingUp, Hash, Activity, AlertTriangle 
 } from 'lucide-react';
+import { mod, SECP, ecMul } from '@/lib/verify';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CHRONOS: KEY EVOLUTION SYSTEM
