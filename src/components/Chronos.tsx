@@ -251,9 +251,9 @@ export const Chronos: React.FC = () => {
     const nextKey = await PRF(prevKey, t, stateStr);
     const nextAddress = await deriveAddress(nextKey);
     
-    // Calculate conditional entropy (approximation)
-    // In a true PRF, H(K_n | K_{n-1}) ≈ H(K_n) = 256 bits
-    const entropy = 256 - Math.log2(1 + t * 0.001); // Minimal degradation visualization
+    // Gemessene bedingte Entropie über die Schlüsselbytes (PRF-Ausgabe)
+    const entropy = measuredEntropy(nextKey);
+
     
     return {
       t,
