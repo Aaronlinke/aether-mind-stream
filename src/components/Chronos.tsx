@@ -63,15 +63,37 @@ interface AttackMetrics {
 }
 
 // Generate address from key (simplified - just hash truncation)
+// Echte secp256k1-Ableitung: d = K mod n, Q = d·G, Adresse = SHA-256(komprimierter Pubkey)[0..20]
 async function deriveAddress(key: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(key);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const d = mod(BigInt('0x' + key), SECP.n) || 1n;
+  const Q = ecMul(d);
+  if (!Q) return '0x' + '0'.repeat(40);
+  const prefix = Q.y % 2n === 0n ? '02' : '03';
+  const comp = prefix + Q.x.toString(16).padStart(64, '0');
+  const bytes = new Uint8Array(comp.match(/.{2}/g)!.map(h => parseInt(h, 16)));
+  const hashBuffer = await crypto.subtle.digest('SHA-256', bytes);
   const hex = Array.from(new Uint8Array(hashBuffer))
     .map(b => b.toString(16).padStart(2, '0'))
     .join('');
   return '0x' + hex.substring(0, 40);
 }
+
+// Gemessene Shannon-Entropie über die Schlüsselbytes, skaliert auf 256 Bit
+function measuredEntropy(keyHex: string): number {
+  const bytes = keyHex.match(/.{2}/g)?.map(h => parseInt(h, 16)) ?? [];
+  if (!bytes.length) return 0;
+  const counts = new Array(256).fill(0);
+  for (const b of bytes) counts[b]++;
+  let H = 0;
+  for (const c of counts) {
+    if (!c) continue;
+    const p = c / bytes.length;
+    H -= p * Math.log2(p);
+  }
+  // H in Bit/Byte (max 8, hier durch Stichprobengröße auf log2(32)=5 begrenzt)
+  return (H / Math.log2(bytes.length)) * 256;
+}
+
 
 // SRIL evolution step
 function srilStep(h: number, n: number, g: number, t: number): { h: number; n: number; g: number } {
