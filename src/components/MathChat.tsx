@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AI_MODELS, DEFAULT_MODEL, loadCustomKeys, modelRequiresKey, type CustomKeys } from "@/lib/aiModels";
 import { ApiKeyManager } from "@/components/ApiKeyManager";
 import { downloadMarkdown, downloadJson } from "@/lib/download";
+import { auditText, verdict, repairPrompt } from "@/lib/rigor";
 
 type Message = {
   role: "user" | "assistant";
@@ -232,6 +233,19 @@ export function MathChat() {
               {msg.role === "assistant" && isLoading && i === messages.length - 1 && (
                 <span className="inline-block w-2 h-4 bg-foreground ml-1 animate-pulse" />
               )}
+              {msg.role === "assistant" && msg.content.length > 40 &&
+                !(isLoading && i === messages.length - 1) && (() => {
+                  const rep = auditText(msg.content);
+                  const v = verdict(rep);
+                  return (
+                    <div className={`mt-2 text-[10px] border-l-2 pl-2 ${v.ok ? "border-foreground" : "border-destructive"}`}>
+                      <div className="font-mono">{v.text} · Score {rep.score}/100 · Labels {rep.labels}</div>
+                      {rep.findings.slice(0, 4).map((f, k) => (
+                        <div key={k} className="opacity-70">– [{f.severity}] {f.msg}</div>
+                      ))}
+                    </div>
+                  );
+                })()}
             </div>
           </div>
         ))}
