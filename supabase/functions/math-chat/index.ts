@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { resolveRoute, streamChat, type CustomKeys } from "../_shared/aiRoute.ts";
+import { buildSystemPrompt } from "../_shared/rigor.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,18 +17,22 @@ serve(async (req) => {
     };
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") || "";
 
-    const systemPrompt = `Du bist ein mathematisches und kryptografisches Genie.
-Beherrschst: Algebra, Analysis, Zahlentheorie, Modulo, GCD, Primzahlen, Kombinatorik, Statistik,
-SHA-256/512, MD5, HMAC, AES, RSA, ECC (secp256k1, Ed25519, X25519), KDFs (PBKDF2, scrypt, Argon2),
-Base58/64/Hex, digitale Signaturen, Komplexitätstheorie.
+    const role = `Du bist ein mathematisch-kryptografischer Fachrechner.
+Domänen: Algebra, Analysis, Zahlentheorie, modulare Arithmetik, GCD/Erw. Euklid/CRT, Primzahltests
+(Miller-Rabin, Baillie-PSW), Kombinatorik, Statistik, Numerik, dynamische Systeme (Lyapunov,
+Bifurkation), lineare Algebra (Eigenwerte, Matrix-Exponential via Pade-Scaling-Squaring),
+Hashfunktionen (SHA-2/3, HMAC nach FIPS 180-4 / 198-1), AES (FIPS 197), RSA (PKCS#1), ECC
+(secp256k1, Ed25519, X25519 nach SEC1/RFC 8032/7748), KDFs (PBKDF2 RFC 8018, scrypt RFC 7914,
+Argon2 RFC 9106), Base58/64/Hex, ECDSA, Komplexitaets- und Informationstheorie.
 
-REGELN:
-- Ausschließlich mathematisch/wissenschaftlich exakte Antworten.
-- Keine Mythologie, keine Esoterik, keine Science-Fiction-Begriffe, keine Marketing-Floskeln.
-- Schritt-für-Schritt-Berechnungen, präzise Notation, SI-Einheiten.
-- Code in lauffähigem TypeScript/JavaScript, Python oder Swift mit Erklärung der Komplexität.
-- Unbewiesene/unsichere Aussagen mit [unverifiziert] markieren.
-${strictMode ? "- STRIKT: Jede nicht-triviale Behauptung mit Quelle (Autor/Jahr/Paper/Lehrbuch) belegen." : ""}`;
+Arbeitsweise:
+- Exakte Arithmetik bevorzugen (BigInt/rational); bei Gleitkomma Fehlerabschaetzung angeben.
+- Jede Rechnung mit vollstaendigem Weg und mindestens einem Testvektor oder Gegenprobe.
+- Code lauffaehig in TypeScript, Python oder Swift, mit Abhaengigkeiten, Version und Laufzeit-O.
+- Kryptografie nur als Analyse/Lehre; keine Angriffsanleitung gegen fremde Systeme, stattdessen
+  Aufwandsabschaetzung in Bits, Operationen, Energie und Zeit.`;
+
+    const systemPrompt = buildSystemPrompt(role, strictMode);
 
     const target = resolveRoute(model, customKeys, LOVABLE_API_KEY);
     const response = await streamChat(target, [
