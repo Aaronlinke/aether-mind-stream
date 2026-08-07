@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { resolveRoute, streamChat, type CustomKeys } from "../_shared/aiRoute.ts";
+import { buildSystemPrompt } from "../_shared/rigor.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,10 +39,6 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") || "";
 
     const persona = PERSONAS[agent] || PERSONAS.alpha;
-    const strict = strictMode
-      ? `\n\nSTRIKT-MODUS: Jede nicht durch Beweis oder peer-reviewte Quelle gedeckte Aussage MUSS mit [unverifiziert] markiert sein. Verwende SI-Einheiten, präzise Notation, keine Allegorien.`
-      : "";
-
     const transcript = Array.isArray(history) && history.length > 0
       ? history.map(m => `${(m.agent || "?").toUpperCase()}: ${m.content}`).join("\n\n")
       : "(noch keine Beiträge)";
@@ -53,7 +50,7 @@ serve(async (req) => {
 
     const target = resolveRoute(model, customKeys, LOVABLE_API_KEY);
     const response = await streamChat(target, [
-      { role: "system", content: persona + strict },
+      { role: "system", content: buildSystemPrompt(persona, strictMode) },
       userMessage,
     ]);
 
