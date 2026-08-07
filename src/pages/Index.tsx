@@ -47,8 +47,9 @@ const TermuxForge = lazy(() => import("@/components/TermuxForge").then(m => ({ d
 const Verify = lazy(() => import("@/components/Verify").then(m => ({ default: m.Verify })));
 const CloudPanel = lazy(() => import("@/components/CloudPanel").then(m => ({ default: m.CloudPanel })));
 const SVRC = lazy(() => import("@/components/SVRC").then(m => ({ default: m.SVRC })));
+const Schwarm = lazy(() => import("@/components/Schwarm").then(m => ({ default: m.Schwarm })));
 
-type Mode = "verify" | "cloud" | "svrc" | "termux" | "vollrechnung" | "apex" | "codelab" | "ziprunner" | "kollektiv" | "entropie" | "weakkey" | "protokoll" | "orakel" | "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "quad" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export" | "primes" | "matrix" | "cipher" | "graph" | "modular" | "rsa" | "lorenz" | "mandel" | "ecc" | "organismus" | "expm" | "fp" | "zeit";
+type Mode = "schwarm" | "verify" | "cloud" | "svrc" | "termux" | "vollrechnung" | "apex" | "codelab" | "ziprunner" | "kollektiv" | "entropie" | "weakkey" | "protokoll" | "orakel" | "chronos" | "inversion" | "nexus" | "omni" | "linke" | "chat" | "debate" | "quad" | "tools" | "sha256" | "lattice" | "formeln" | "hexgitter" | "pipeline" | "attack" | "latex" | "3d" | "logmap" | "export" | "primes" | "matrix" | "cipher" | "graph" | "modular" | "rsa" | "lorenz" | "mandel" | "ecc" | "organismus" | "expm" | "fp" | "zeit";
 
 function LoadingFallback() {
   return (
@@ -72,6 +73,7 @@ const Index = () => {
 
 
   const modes: { id: Mode; label: string }[] = [
+    { id: "schwarm", label: "SCHWARM" },
     { id: "verify", label: "VERIFIKATION" },
     { id: "cloud", label: "CLOUD" },
     { id: "svrc", label: "SVRC" },
@@ -140,6 +142,7 @@ const Index = () => {
       <div className="flex-1 overflow-hidden">
         <ErrorBoundary key={mode} label={mode}>
           <Suspense fallback={<LoadingFallback />}>
+            {mode === "schwarm" && <Schwarm />}
             {mode === "verify" && <Verify />}
             {mode === "cloud" && <CloudPanel />}
             {mode === "svrc" && <SVRC />}
