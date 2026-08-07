@@ -3,6 +3,7 @@
 // jede Antwort fließt als Erinnerung zurück -> gemeinsames Gedächtnis über alle Module.
 import type { CustomKeys } from "./aiModels";
 import { getSVRC } from "./svrc";
+import { auditText, repairPrompt } from "./rigor";
 
 const URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/math-chat`;
 
@@ -17,6 +18,8 @@ export async function callMathChat(opts: {
   svrc?: boolean;
   /** Modulname für das gemeinsame Gedächtnis. */
   source?: string;
+  /** Rigor-Auto-Korrektur (Standard: an, nur ohne onDelta möglich). */
+  rigor?: boolean;
 }): Promise<string> {
   const useSvrc = opts.svrc !== false;
   let messages = opts.messages;
@@ -81,6 +84,27 @@ export async function callMathChat(opts: {
       } catch { /* noop */ }
     }
   }
+  // Rigor-Gate: fällt die Antwort durch die Fachprüfung, wird EINE Korrekturrunde
+  // gefahren (nur bei nicht-gestreamtem Verbrauch, sonst ist die UI schon gefüllt).
+  if (opts.rigor !== false && !opts.onDelta && full.trim().length > 40) {
+    const rep = auditText(full);
+    if (rep.findings.some(f => f.severity === "hoch") || rep.score < 70) {
+      try {
+        const fixed = await callMathChat({
+          ...opts,
+          rigor: false,
+          svrc: false,
+          messages: [
+            ...opts.messages,
+            { role: "assistant", content: full },
+            { role: "user", content: repairPrompt(rep) },
+          ],
+        });
+        if (fixed.trim().length > 40 && auditText(fixed).score > rep.score) full = fixed;
+      } catch { /* Korrekturrunde optional */ }
+    }
+  }
+
   if (useSvrc && full) {
     const core = getSVRC();
     core.memory.store(`A[${opts.source ?? "ai"}]: ${full.slice(0, 600)}`, 2);

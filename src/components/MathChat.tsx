@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AI_MODELS, DEFAULT_MODEL, loadCustomKeys, modelRequiresKey, type CustomKeys } from "@/lib/aiModels";
 import { ApiKeyManager } from "@/components/ApiKeyManager";
 import { downloadMarkdown, downloadJson } from "@/lib/download";
-import { auditText, verdict, repairPrompt } from "@/lib/rigor";
+import { auditText, verdict } from "@/lib/rigor";
 
 type Message = {
   role: "user" | "assistant";
