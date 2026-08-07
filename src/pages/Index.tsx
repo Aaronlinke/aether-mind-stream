@@ -142,6 +142,7 @@ const Index = () => {
       <div className="flex-1 overflow-hidden">
         <ErrorBoundary key={mode} label={mode}>
           <Suspense fallback={<LoadingFallback />}>
+            {mode === "schwarm" && <Schwarm />}
             {mode === "verify" && <Verify />}
             {mode === "cloud" && <CloudPanel />}
             {mode === "svrc" && <SVRC />}
