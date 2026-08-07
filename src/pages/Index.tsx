@@ -73,6 +73,7 @@ const Index = () => {
 
 
   const modes: { id: Mode; label: string }[] = [
+    { id: "schwarm", label: "SCHWARM" },
     { id: "verify", label: "VERIFIKATION" },
     { id: "cloud", label: "CLOUD" },
     { id: "svrc", label: "SVRC" },
