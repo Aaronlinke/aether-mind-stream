@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { resolveRoute, streamChat, type CustomKeys } from "../_shared/aiRoute.ts";
-import { buildSystemPrompt, RIGOR_STRICT } from "../_shared/rigor.ts";
+import { buildSystemPrompt } from "../_shared/rigor.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,8 +39,6 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") || "";
 
     const persona = PERSONAS[agent] || PERSONAS.alpha;
-    const strict = strictMode ? RIGOR_STRICT : "";
-
     const transcript = Array.isArray(history) && history.length > 0
       ? history.map(m => `${(m.agent || "?").toUpperCase()}: ${m.content}`).join("\n\n")
       : "(noch keine Beiträge)";
