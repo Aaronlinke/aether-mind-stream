@@ -10,15 +10,19 @@ export const AI_MODELS: AiModel[] = [
   { id: "google/gemini-2.5-pro",           label: "Gemini 2.5 Pro",          provider: "Google (Lovable)", route: "lovable" },
   { id: "google/gemini-3-flash-preview",   label: "Gemini 3 Flash (Prev)",   provider: "Google (Lovable)", route: "lovable" },
   { id: "google/gemini-3.5-flash",         label: "Gemini 3.5 Flash",        provider: "Google (Lovable)", route: "lovable" },
+  { id: "google/gemini-3.6-flash",         label: "Gemini 3.6 Flash",        provider: "Google (Lovable)", route: "lovable" },
+  { id: "google/gemini-3.1-flash-lite",    label: "Gemini 3.1 Flash Lite",   provider: "Google (Lovable)", route: "lovable" },
   { id: "google/gemini-3.1-pro-preview",   label: "Gemini 3.1 Pro (Prev)",   provider: "Google (Lovable)", route: "lovable" },
-  // OpenAI via Lovable
+  // OpenAI via Lovable (nur Chat-Modelle; *-pro laufen nur über die Responses-API)
   { id: "openai/gpt-5-nano",  label: "GPT-5 Nano",  provider: "OpenAI (Lovable)", route: "lovable" },
   { id: "openai/gpt-5-mini",  label: "GPT-5 Mini",  provider: "OpenAI (Lovable)", route: "lovable" },
   { id: "openai/gpt-5",       label: "GPT-5",       provider: "OpenAI (Lovable)", route: "lovable" },
   { id: "openai/gpt-5.4",     label: "GPT-5.4",     provider: "OpenAI (Lovable)", route: "lovable" },
-  { id: "openai/gpt-5.4-pro", label: "GPT-5.4 Pro", provider: "OpenAI (Lovable)", route: "lovable" },
   { id: "openai/gpt-5.5",     label: "GPT-5.5",     provider: "OpenAI (Lovable)", route: "lovable" },
-  { id: "openai/gpt-5.5-pro", label: "GPT-5.5 Pro", provider: "OpenAI (Lovable)", route: "lovable" },
+  { id: "openai/gpt-5.6-luna", label: "GPT-5.6 Luna", provider: "OpenAI (Lovable)", route: "lovable" },
+  { id: "openai/gpt-5.6-terra", label: "GPT-5.6 Terra", provider: "OpenAI (Lovable)", route: "lovable" },
+  { id: "openai/gpt-5.6-sol",  label: "GPT-5.6 Sol",  provider: "OpenAI (Lovable)", route: "lovable" },
+
 
   // Direkt-Provider (eigener Key)
   { id: "custom-openai/gpt-4o",            label: "GPT-4o (eigener Key)",         provider: "OpenAI direkt",   route: "openai" },
