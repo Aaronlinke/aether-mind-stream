@@ -6,10 +6,20 @@ export type CustomKeys = { openai?: string; deepseek?: string; google?: string }
 
 const ALLOWED_LOVABLE = new Set([
   "google/gemini-2.5-flash","google/gemini-2.5-flash-lite","google/gemini-2.5-pro",
-  "google/gemini-3-flash-preview","google/gemini-3.5-flash","google/gemini-3.1-pro-preview",
-  "openai/gpt-5-nano","openai/gpt-5-mini","openai/gpt-5",
-  "openai/gpt-5.4","openai/gpt-5.4-pro","openai/gpt-5.5","openai/gpt-5.5-pro",
+  "google/gemini-3-flash-preview","google/gemini-3.5-flash","google/gemini-3.6-flash",
+  "google/gemini-3.1-flash-lite","google/gemini-3.1-pro-preview",
+  "openai/gpt-5-nano","openai/gpt-5-mini","openai/gpt-5","openai/gpt-5.2",
+  "openai/gpt-5.4","openai/gpt-5.4-mini","openai/gpt-5.4-nano","openai/gpt-5.5",
+  "openai/gpt-5.6-luna","openai/gpt-5.6-terra","openai/gpt-5.6-sol",
 ]);
+
+// *-pro Reasoning-Modelle sind auf /v1/chat/completions kein Chat-Modell (400) ->
+// auf das nächstbeste Chat-Modell abbilden.
+const REMAP: Record<string, string> = {
+  "openai/gpt-5.5-pro": "openai/gpt-5.5",
+  "openai/gpt-5.4-pro": "openai/gpt-5.4",
+};
+
 
 export type RouteTarget = {
   url: string;
