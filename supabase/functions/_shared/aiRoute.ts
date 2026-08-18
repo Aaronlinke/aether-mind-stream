@@ -61,7 +61,8 @@ export function resolveRoute(modelId: string, customKeys: CustomKeys | undefined
   }
 
   // Default: Lovable Gateway
-  const selected = ALLOWED_LOVABLE.has(modelId) ? modelId : "google/gemini-2.5-flash";
+  const mapped = REMAP[modelId] ?? modelId;
+  const selected = ALLOWED_LOVABLE.has(mapped) ? mapped : "google/gemini-2.5-flash";
   return {
     url: "https://ai.gateway.lovable.dev/v1/chat/completions",
     apiKey: lovableKey,
