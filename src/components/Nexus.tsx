@@ -592,6 +592,9 @@ export const Nexus: React.FC = () => {
             INITIAL CONDITIONS
           </CardTitle>
         </CardHeader>
+        <div className="px-6 pb-3">
+          <SeedFromTask onSeed={(s) => { setH0(s.H); setN0(s.N); setG0(s.G); }} />
+        </div>
         <CardContent className="grid grid-cols-3 md:grid-cols-6 gap-4">
           <div>
             <label className="text-[10px] text-muted-foreground">H₀</label>
