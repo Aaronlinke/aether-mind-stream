@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SeedFromTask } from '@/components/SeedFromTask';
 import { 
   Clock, Target, Atom, Zap, Download, 
   Play, Pause, RotateCcw, Copy, Check, Shield, 

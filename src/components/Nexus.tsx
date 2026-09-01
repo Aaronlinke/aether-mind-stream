@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { Orbit, Zap, Activity, Waves, Grid3X3, Sparkles, TrendingUp, Atom } from 'lucide-react';
+import { SeedFromTask } from '@/components/SeedFromTask';
 
 // SRIL Coefficients (empirically calibrated)
 const ALPHA = 0.245;
