@@ -72,7 +72,7 @@ export const KEY_SOURCES: Record<string, { label: string; url: string; note: str
   groq:       { label: "Groq Cloud",       url: "https://console.groq.com/keys",      note: "Gemma 2, Llama 3.3, Qwen3 – Free Tier" },
   openrouter: { label: "OpenRouter",       url: "https://openrouter.ai/keys",         note: "alle „:free“-Modelle" },
   cerebras:   { label: "Cerebras",         url: "https://cloud.cerebras.ai",          note: "Llama/Qwen, Free Tier" },
-  mistral:    { label: "Mistral",          url: "https://console.mistral.ai/api-keys","note": "Free Tier der La Plateforme" } as never,
+  mistral:    { label: "Mistral",          url: "https://console.mistral.ai/api-keys", note: "Free Tier der La Plateforme" },
   openai:     { label: "OpenAI",           url: "https://platform.openai.com/api-keys", note: "kostenpflichtig" },
   deepseek:   { label: "DeepSeek",         url: "https://platform.deepseek.com",      note: "kostenpflichtig" },
 };
