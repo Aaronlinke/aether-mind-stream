@@ -2,7 +2,10 @@
 // Routes a model id to either Lovable AI Gateway or a direct provider (OpenAI/DeepSeek/Google)
 // using OpenAI-compatible chat-completions endpoints.
 
-export type CustomKeys = { openai?: string; deepseek?: string; google?: string };
+export type CustomKeys = {
+  openai?: string; deepseek?: string; google?: string;
+  groq?: string; openrouter?: string; cerebras?: string; mistral?: string;
+};
 
 const ALLOWED_LOVABLE = new Set([
   "google/gemini-2.5-flash","google/gemini-2.5-flash-lite","google/gemini-2.5-pro",
