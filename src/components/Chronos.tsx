@@ -715,6 +715,8 @@ Abläufe kann man nur **verpassen**.
                       />
                     </div>
                     
+                    <SeedFromTask compact onSeed={(s) => { setH0(s.H); setN0(s.N); setG0(s.G); }} />
+
                     <div className="grid grid-cols-3 gap-2">
                       <div>
                         <Label className="text-[10px] text-muted-foreground">H₀</Label>
