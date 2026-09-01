@@ -1,5 +1,5 @@
-export type Provider = "lovable" | "openai" | "deepseek" | "google";
-export type AiModel = { id: string; label: string; provider: string; route: Provider };
+export type Provider = "lovable" | "openai" | "deepseek" | "google" | "groq" | "openrouter" | "cerebras" | "mistral";
+export type AiModel = { id: string; label: string; provider: string; route: Provider; free?: boolean };
 
 // route = "lovable" -> via Lovable AI Gateway (kein eigener Key nötig)
 // route = "openai" | "deepseek" | "google" -> direkter Provider, eigener API-Key nötig
