@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription,
 } from "@/components/ui/dialog";
-import { loadCustomKeys, saveCustomKeys, type CustomKeys } from "@/lib/aiModels";
+import { loadCustomKeys, saveCustomKeys, KEY_SOURCES, type CustomKeys } from "@/lib/aiModels";
 import { useToast } from "@/hooks/use-toast";
 
 export function ApiKeyManager({ onChange }: { onChange?: (k: CustomKeys) => void }) {
