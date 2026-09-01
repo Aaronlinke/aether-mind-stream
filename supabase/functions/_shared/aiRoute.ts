@@ -2,7 +2,10 @@
 // Routes a model id to either Lovable AI Gateway or a direct provider (OpenAI/DeepSeek/Google)
 // using OpenAI-compatible chat-completions endpoints.
 
-export type CustomKeys = { openai?: string; deepseek?: string; google?: string };
+export type CustomKeys = {
+  openai?: string; deepseek?: string; google?: string;
+  groq?: string; openrouter?: string; cerebras?: string; mistral?: string;
+};
 
 const ALLOWED_LOVABLE = new Set([
   "google/gemini-2.5-flash","google/gemini-2.5-flash-lite","google/gemini-2.5-pro",
@@ -28,37 +31,27 @@ export type RouteTarget = {
   authHeader?: string;    // override default "Authorization: Bearer"
 };
 
+// OpenAI-kompatible Endpunkte der Direkt-/Free-Tier-Provider.
+const DIRECT: Record<string, { url: string; keyField: keyof CustomKeys; name: string }> = {
+  "custom-openai/":     { url: "https://api.openai.com/v1/chat/completions", keyField: "openai", name: "OpenAI" },
+  "custom-deepseek/":   { url: "https://api.deepseek.com/v1/chat/completions", keyField: "deepseek", name: "DeepSeek" },
+  "custom-google/":     { url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", keyField: "google", name: "Google AI Studio" },
+  "custom-groq/":       { url: "https://api.groq.com/openai/v1/chat/completions", keyField: "groq", name: "Groq" },
+  "custom-openrouter/": { url: "https://openrouter.ai/api/v1/chat/completions", keyField: "openrouter", name: "OpenRouter" },
+  "custom-cerebras/":   { url: "https://api.cerebras.ai/v1/chat/completions", keyField: "cerebras", name: "Cerebras" },
+  "custom-mistral/":    { url: "https://api.mistral.ai/v1/chat/completions", keyField: "mistral", name: "Mistral" },
+};
+
 export function resolveRoute(modelId: string, customKeys: CustomKeys | undefined, lovableKey: string): RouteTarget {
   if (typeof modelId !== "string") modelId = "google/gemini-2.5-flash";
 
-  // Custom direct providers
-  if (modelId.startsWith("custom-openai/")) {
-    const key = customKeys?.openai;
-    if (!key) throw new Error("Eigener OpenAI API-Key fehlt. In den Einstellungen hinterlegen.");
-    return {
-      url: "https://api.openai.com/v1/chat/completions",
-      apiKey: key,
-      model: modelId.replace("custom-openai/", ""),
-    };
+  for (const [prefix, cfg] of Object.entries(DIRECT)) {
+    if (!modelId.startsWith(prefix)) continue;
+    const key = customKeys?.[cfg.keyField];
+    if (!key) throw new Error(`${cfg.name} API-Key fehlt. Im Keys-Dialog hinterlegen (kostenloser Key möglich).`);
+    return { url: cfg.url, apiKey: key, model: modelId.slice(prefix.length) };
   }
-  if (modelId.startsWith("custom-deepseek/")) {
-    const key = customKeys?.deepseek;
-    if (!key) throw new Error("Eigener DeepSeek API-Key fehlt. In den Einstellungen hinterlegen.");
-    return {
-      url: "https://api.deepseek.com/v1/chat/completions",
-      apiKey: key,
-      model: modelId.replace("custom-deepseek/", ""),
-    };
-  }
-  if (modelId.startsWith("custom-google/")) {
-    const key = customKeys?.google;
-    if (!key) throw new Error("Eigener Google API-Key fehlt. In den Einstellungen hinterlegen.");
-    return {
-      url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-      apiKey: key,
-      model: modelId.replace("custom-google/", ""),
-    };
-  }
+
 
   // Default: Lovable Gateway
   const mapped = REMAP[modelId] ?? modelId;

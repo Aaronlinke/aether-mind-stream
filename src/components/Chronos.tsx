@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SeedFromTask } from '@/components/SeedFromTask';
 import { 
   Clock, Target, Atom, Zap, Download, 
   Play, Pause, RotateCcw, Copy, Check, Shield, 
@@ -714,6 +715,8 @@ Abläufe kann man nur **verpassen**.
                       />
                     </div>
                     
+                    <SeedFromTask compact onSeed={(s) => { setH0(s.H); setN0(s.N); setG0(s.G); }} />
+
                     <div className="grid grid-cols-3 gap-2">
                       <div>
                         <Label className="text-[10px] text-muted-foreground">H₀</Label>

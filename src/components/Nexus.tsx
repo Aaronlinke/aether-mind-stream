@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { Orbit, Zap, Activity, Waves, Grid3X3, Sparkles, TrendingUp, Atom } from 'lucide-react';
+import { SeedFromTask } from '@/components/SeedFromTask';
 
 // SRIL Coefficients (empirically calibrated)
 const ALPHA = 0.245;
@@ -592,6 +593,9 @@ export const Nexus: React.FC = () => {
             INITIAL CONDITIONS
           </CardTitle>
         </CardHeader>
+        <div className="px-6 pb-3">
+          <SeedFromTask onSeed={(s) => { setH0(s.H); setN0(s.N); setG0(s.G); }} />
+        </div>
         <CardContent className="grid grid-cols-3 md:grid-cols-6 gap-4">
           <div>
             <label className="text-[10px] text-muted-foreground">H₀</label>
